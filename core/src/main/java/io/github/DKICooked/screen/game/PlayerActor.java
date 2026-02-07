@@ -10,10 +10,22 @@ public class PlayerActor extends Actor {
 
     private ShapeRenderer shapeRenderer = new ShapeRenderer();
 
+    // Movement
+    private final float moveSpeed = 250f;
+
+    // Jump physics
     private float velocityY = 0f;
-    private final float gravity = -1200f;
-    private final float jumpVelocity = 500f;
-    private final float moveSpeed = 300f;
+    private final float gravity = -1400f;
+
+    // Jump charge
+    private float jumpCharge = 0f;
+    private final float maxJumpCharge = 900f;
+    private final float chargeRate = 1200f;
+
+    // State
+    private boolean isCharging = false;
+    private boolean isGrounded = true;
+    private boolean wasSpacePressed = false; // Track previous frame state
 
     private final float groundY = 100f; // temporary ground
 
@@ -21,28 +33,50 @@ public class PlayerActor extends Actor {
     public void act(float delta) {
         super.act(delta);
 
-        // LEFT / RIGHT
-        if (Gdx.input.isKeyPressed(Input.Keys.A)) {
-            moveBy(-moveSpeed * delta, 0);
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.D)) {
-            moveBy(moveSpeed * delta, 0);
+        boolean spacePressed = Gdx.input.isKeyPressed(Input.Keys.SPACE);
+
+        // ===== CHARGING JUMP =====
+        if (isGrounded && spacePressed) {
+            isCharging = true;
+            jumpCharge += chargeRate * delta;
+            jumpCharge = Math.min(jumpCharge, maxJumpCharge);
         }
 
-        // GRAVITY
-        velocityY += gravity * delta;
-        moveBy(0, velocityY * delta);
+        // ===== RELEASE JUMP =====
+        if (isGrounded && isCharging && wasSpacePressed && !spacePressed) {
+            velocityY = jumpCharge;
+            jumpCharge = 0f;
+            isCharging = false;
+            isGrounded = false;
+        }
 
-        // GROUND COLLISION (temporary)
-        if (getY() <= groundY) {
+        // ===== HORIZONTAL MOVEMENT (GROUND + AIR) =====
+        if (!isCharging) {
+            if (Gdx.input.isKeyPressed(Input.Keys.A)) {
+                moveBy(-moveSpeed * delta, 0);
+            }
+            if (Gdx.input.isKeyPressed(Input.Keys.D)) {
+                moveBy(moveSpeed * delta, 0);
+            }
+        }
+
+        // ===== APPLY GRAVITY =====
+        if (!isGrounded) {
+            velocityY += gravity * delta;
+            moveBy(0, velocityY * delta);
+        }
+
+        // ===== GROUND COLLISION =====
+        if (getY() < groundY) {
             setY(groundY);
-            velocityY = 0;
+            velocityY = 0f;
+            isGrounded = true;
+            isCharging = false;
+            jumpCharge = 0f;
         }
 
-        // JUMP
-        if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE) && getY() <= groundY) {
-            velocityY = jumpVelocity;
-        }
+        // Update previous frame state
+        wasSpacePressed = spacePressed;
     }
 
     @Override
