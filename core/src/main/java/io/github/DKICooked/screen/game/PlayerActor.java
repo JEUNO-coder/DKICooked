@@ -5,6 +5,7 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.utils.Array;
 
@@ -14,6 +15,10 @@ public class PlayerActor extends Actor {
 
     // Movement
     private final float moveSpeed = 350f;
+    private float velocityX = 0f;
+    private final float accel = 2000f;
+    private final float maxSpeed = 300f;
+    private final float friction = 1800f;
 
     // Jump physics
     private float velocityY = 0f;
@@ -77,15 +82,33 @@ public class PlayerActor extends Actor {
             isCharging = false;
         }
 
-        // ===== HORIZONTAL MOVEMENT =====
+        float input = 0f;
+
         if (!isCharging) {
             if (Gdx.input.isKeyPressed(Input.Keys.A)) {
-                moveBy(-moveSpeed * delta, 0);
+                input -= 1f;
             }
             if (Gdx.input.isKeyPressed(Input.Keys.D)) {
-                moveBy(moveSpeed * delta, 0);
+                input += 1f;
             }
         }
+
+        if (input != 0) {
+            velocityX += input * accel * delta;
+        } else {
+            // Apply friction when no input
+            if (velocityX > 0) {
+                velocityX -= friction * delta;
+                if (velocityX < 0) velocityX = 0;
+            } else if (velocityX < 0) {
+                velocityX += friction * delta;
+                if (velocityX > 0) velocityX = 0;
+            }
+        }
+
+        velocityX = MathUtils.clamp(velocityX, -maxSpeed, maxSpeed);
+
+        moveBy(velocityX * delta, 0);
 
         // ===== APPLY GRAVITY =====
         if (!isGrounded) {
