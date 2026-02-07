@@ -11,10 +11,9 @@ import com.badlogic.gdx.utils.Array;
 
 public class PlayerActor extends Actor {
 
-    private ShapeRenderer shapeRenderer = new ShapeRenderer();
+    private final ShapeRenderer shapeRenderer = new ShapeRenderer();
 
     // Movement
-    private final float moveSpeed = 350f;
     private float velocityX = 0f;
     private final float accel = 2000f;
     private final float maxSpeed = 300f;
@@ -27,7 +26,7 @@ public class PlayerActor extends Actor {
     // Jump charge
     private float jumpCharge = 0f;
     private final float maxJumpCharge = 900f;
-    private final float chargeRate = 1200f;
+    private final float chargeRate = 1600f;
 
     // State
     private boolean isCharging = false;
@@ -200,9 +199,5 @@ public class PlayerActor extends Actor {
         shapeRenderer.end();
 
         batch.begin();
-    }
-
-    public float getJumpChargePercent() {
-        return jumpCharge / maxJumpCharge;
     }
 }
