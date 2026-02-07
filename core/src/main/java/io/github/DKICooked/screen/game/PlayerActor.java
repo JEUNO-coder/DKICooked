@@ -33,6 +33,11 @@ public class PlayerActor extends Actor {
     private boolean isGrounded = false;
     private float jumpCooldown = 0f;
 
+    // Side collision stun
+    private float stunTime = 0f;
+    private final float stunDuration = 0.3f; // 300ms stun
+    private final float bounceForce = 0.6f; // Bounce multiplier
+
     private Platform currentPlatform = null;
 
     // Collision result enum
@@ -49,6 +54,11 @@ public class PlayerActor extends Actor {
         // Decrease jump cooldown
         if (jumpCooldown > 0) {
             jumpCooldown -= delta;
+        }
+
+        // Decrease stun time
+        if (stunTime > 0) {
+            stunTime -= delta;
         }
 
         // ===== CHARGING JUMP =====
@@ -83,7 +93,8 @@ public class PlayerActor extends Actor {
 
         float input = 0f;
 
-        if (!isCharging) {
+        // Can't control movement during stun
+        if (!isCharging && stunTime <= 0) {
             if (Gdx.input.isKeyPressed(Input.Keys.A)) {
                 input -= 1f;
             }
@@ -92,10 +103,10 @@ public class PlayerActor extends Actor {
             }
         }
 
-        if (input != 0) {
+        if (input != 0 && stunTime <= 0) {
             velocityX += input * accel * delta;
         } else {
-            // Apply friction when no input
+            // Apply friction when no input or stunned
             if (velocityX > 0) {
                 velocityX -= friction * delta;
                 if (velocityX < 0) velocityX = 0;
@@ -114,8 +125,8 @@ public class PlayerActor extends Actor {
             velocityY += gravity * delta;
             moveBy(0, velocityY * delta);
         }
-
     }
+
     public void checkPlatformCollision(Array<Platform> platforms) {
         boolean foundGround = false;
 
@@ -176,12 +187,16 @@ public class PlayerActor extends Actor {
             velocityY = 0f;
             return CollisionResult.HIT_BOTTOM;
         } else if (minOverlap == overlapLeft) {
-            // Hit from right side
+            // Hit from right side - BOUNCE LEFT
             setX(platformLeft - getWidth());
+            velocityX = -Math.abs(velocityX) * bounceForce; // Reverse and reduce
+            stunTime = stunDuration;
             return CollisionResult.HIT_SIDE;
         } else if (minOverlap == overlapRight) {
-            // Hit from left side
+            // Hit from left side - BOUNCE RIGHT
             setX(platformRight);
+            velocityX = Math.abs(velocityX) * bounceForce; // Reverse and reduce
+            stunTime = stunDuration;
             return CollisionResult.HIT_SIDE;
         }
 
@@ -193,7 +208,7 @@ public class PlayerActor extends Actor {
         batch.end();
 
         shapeRenderer.setProjectionMatrix(getStage().getCamera().combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
         shapeRenderer.setColor(Color.RED);
         shapeRenderer.rect(getX(), getY(), getWidth(), getHeight());
         shapeRenderer.end();

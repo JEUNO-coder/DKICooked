@@ -26,7 +26,7 @@ public class Platform extends Actor {
         batch.end();
 
         shapeRenderer.setProjectionMatrix(getStage().getCamera().combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
         shapeRenderer.setColor(color);
         shapeRenderer.rect(getX(), getY(), getWidth(), getHeight());
         shapeRenderer.end();
