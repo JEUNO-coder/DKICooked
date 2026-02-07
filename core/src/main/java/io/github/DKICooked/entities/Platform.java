@@ -1,4 +1,4 @@
-package io.github.DKICooked.screen.game;
+package io.github.DKICooked.entities;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;

@@ -3,6 +3,8 @@ package io.github.DKICooked.screen.game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.utils.Array;
+import io.github.DKICooked.entities.Platform;
+import io.github.DKICooked.entities.PlayerActor;
 import io.github.DKICooked.screen.BaseScreen;
 
 public class GameScreen extends BaseScreen {
