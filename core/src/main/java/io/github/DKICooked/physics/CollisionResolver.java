@@ -9,6 +9,8 @@ public class CollisionResolver {
         NONE, LANDED_ON_TOP, HIT_SIDE, HIT_BOTTOM
     }
 
+    private static final float EPSILON = 0.5f; // tiny buffer to prevent stutter
+
     public static Result resolve(Actor actor, PhysicsBody body, Platform platform) {
         float aL = actor.getX();
         float aR = actor.getX() + actor.getWidth();
@@ -30,26 +32,26 @@ public class CollisionResolver {
 
         float min = Math.min(Math.min(oL, oR), Math.min(oT, oB));
 
-        if (min == oB && body.velocityY <= 0) {
+        if (min == oB && body.velocityY <= 0f) {
             actor.setY(pT);
-            body.velocityY = 0;
+            body.velocityY = 0f;
             return Result.LANDED_ON_TOP;
         }
 
-        if (min == oT && body.velocityY > 0) {
+        if (min == oT && body.velocityY > 0f) {
             actor.setY(pB - actor.getHeight());
-            body.velocityY = 0;
+            body.velocityY = 0f;
             return Result.HIT_BOTTOM;
         }
 
         if (min == oL) {
-            actor.setX(pL - actor.getWidth());
+            actor.setX(pL - actor.getWidth() - EPSILON);
             body.velocityX = -Math.abs(body.velocityX);
             return Result.HIT_SIDE;
         }
 
         if (min == oR) {
-            actor.setX(pR);
+            actor.setX(pR + EPSILON);
             body.velocityX = Math.abs(body.velocityX);
             return Result.HIT_SIDE;
         }
