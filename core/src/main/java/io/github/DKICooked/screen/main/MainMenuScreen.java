@@ -1,11 +1,10 @@
 package io.github.DKICooked.screen.main;
 
+import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
-import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.Touchable;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
@@ -14,11 +13,11 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Scaling;
+import io.github.DKICooked.Main;
 import io.github.DKICooked.screen.BaseScreen;
+import io.github.DKICooked.screen.game.GameScreen;
 
 public class MainMenuScreen extends BaseScreen {
-    private int selectedIndex = 0;
-    private ImageButton[] buttons;
     private final Texture startText;
     private final Texture startTextHov;
     private final Texture tutText;
@@ -29,9 +28,11 @@ public class MainMenuScreen extends BaseScreen {
     private final Texture exitTextHov;
     private final Texture titleText;
     private final Texture subTitleText;
+    private final Main main;
 
-    public MainMenuScreen() {
+    public MainMenuScreen(Main main) {
         super();
+        this.main = main;
         startText = new Texture(Gdx.files.internal("Start.png"));
         startTextHov = new Texture(Gdx.files.internal("Start_pressed.png"));
         tutText = new Texture(Gdx.files.internal("tutorial.png"));
@@ -107,7 +108,9 @@ public class MainMenuScreen extends BaseScreen {
         startButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
+                main.setScreen(new GameScreen(main));
                 System.out.println("Start Button was clicked");
+
             }
         });
 
@@ -128,6 +131,7 @@ public class MainMenuScreen extends BaseScreen {
         exitButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
+                Gdx.app.exit();
                 System.out.println("Exit Button was clicked");
             }
         });

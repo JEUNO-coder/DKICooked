@@ -38,6 +38,7 @@ public class CollisionResolver {
             return Result.LANDED_ON_TOP;
         }
 
+
         if (min == oT && body.velocityY > 0f) {
             actor.y = pB - actor.height; // FIXED: Use .y and .height
             body.velocityY = 0f;

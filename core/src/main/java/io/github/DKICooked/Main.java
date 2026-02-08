@@ -18,7 +18,7 @@ public class Main extends ApplicationAdapter {
     public void create() {
         batch = new SpriteBatch();
 
-        setScreen(new MainMenuScreen());
+        setScreen(new MainMenuScreen(this));
     }
 
     @Override

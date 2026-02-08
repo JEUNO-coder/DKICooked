@@ -1,19 +1,37 @@
 package io.github.DKICooked.screen.game;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.IntMap;
+import io.github.DKICooked.Main;
 import io.github.DKICooked.entities.Platform;
 import io.github.DKICooked.entities.PlayerActor;
+import io.github.DKICooked.entities.PlayerSprite;
 import io.github.DKICooked.render.DebugRenderer;
 import io.github.DKICooked.screen.BaseScreen;
+import io.github.DKICooked.screen.main.MainMenuScreen;
 
 public class GameScreen extends BaseScreen {
     private PlayerActor player;
+    private PlayerSprite sprite;
     private Array<Platform> platforms;
+    private boolean paused = false;
+    private final Main main;
+
+    //For Paused Screen
+    private PausedScreen pause;
 
     // Screen parameters
     private static final float SCREEN_WIDTH = 800f;
@@ -57,9 +75,9 @@ public class GameScreen extends BaseScreen {
         }
     }
 
-    public GameScreen() {
+    public GameScreen(Main main) {
         super();
-
+        this.main = main;
         platforms = new Array<>();
 
         // Generate initial chunks
@@ -77,8 +95,46 @@ public class GameScreen extends BaseScreen {
         // Give player reference to platforms
         player.setPlatforms(platforms);
 
+        //Create Sprite
+        sprite = new PlayerSprite(player);
+
         // Position camera at chunk 0
         snapCameraToChunk(allChunks.get(0));
+
+        //For paused button
+        Texture pauseTex = new Texture(Gdx.files.internal("Pause.png"));
+        ImageButton.ImageButtonStyle pauseStyle = new ImageButton.ImageButtonStyle();
+        pauseStyle.imageUp = new TextureRegionDrawable(new TextureRegion(pauseTex));
+
+        ImageButton pauseButton = new ImageButton(pauseStyle);
+        pauseButton.setPosition(10, Gdx.graphics.getHeight() - 50);
+        stage.addActor(pauseButton);
+
+        Table uiTable = new Table();
+        uiTable.setFillParent(true);
+        stage.addActor(uiTable);
+
+        uiTable.top().right();
+        uiTable.add(pauseButton).size(40, 40).pad(10);
+
+        //stage.setDebugAll(true);
+
+        // For paused screen
+        pause = new PausedScreen(() -> {
+            paused = false;
+            pause.toggle(false);;
+        }, main);
+        stage.addActor(pause);
+
+        pauseButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                paused = !paused;
+                pause.toggle(paused);
+                System.out.println("Paused: " + paused);
+            }
+        });
+
     }
 
     private Chunk getOrCreateChunk(int index) {
@@ -348,10 +404,22 @@ public class GameScreen extends BaseScreen {
         Gdx.gl.glClearColor(0f, 0f, 0f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        updateChunks();
+        if(Gdx.input.isKeyPressed(Input.Keys.ESCAPE)) {
+            paused = !paused;
+            pause.toggle(paused);
+        }
+
+        if (!paused) {
+            updateChunks();
+        }
 
         stage.act(delta);
         stage.draw();
+
+        Batch batch = stage.getBatch();
+        batch.begin();
+        sprite.draw(batch, player);
+        batch.end();
 
         checkScreenBounds();
         drawScreenOutline();

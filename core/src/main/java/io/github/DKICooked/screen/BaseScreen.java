@@ -9,7 +9,8 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 
 public abstract class BaseScreen implements Screen {
     protected Stage stage;
-    protected Skin skin;
+    // protected Skin skin;
+
 
     public BaseScreen() {
         stage = new Stage(new FitViewport(800, 600));
@@ -33,7 +34,7 @@ public abstract class BaseScreen implements Screen {
     @Override
     public void dispose() {
         stage.dispose();
-        skin.dispose();
+       // skin.dispose();
     }
 
     @Override

@@ -11,7 +11,7 @@ import io.github.DKICooked.render.DebugRenderer;
 import com.badlogic.gdx.math.Rectangle;
 
 public class PlayerActor extends Actor {
-
+    private float groundTimer = 0f;
     private final PhysicsBody body = new PhysicsBody(2000f, 300f, 1300f, -1800f);
     private final Rectangle bounds = new Rectangle();
     private Array<Platform> platforms = new Array<>();
@@ -143,8 +143,13 @@ public class PlayerActor extends Actor {
         isGrounded = foundGround;
 
         if (isGrounded) {
+           // groundTimer = 0.1f;
             body.velocityY = 0f;
         }
+//        } else {
+//            groundTimer -= dt;
+//            if (groundTimer > 0) isGrounded = true;
+//        }
 
         // Small horizontal snap-to-zero
         if (Math.abs(body.velocityX) < 0.5f) {
@@ -159,7 +164,9 @@ public class PlayerActor extends Actor {
     public PhysicsBody getBody() {
         return body;
     }
-
+    public boolean isGrounded() {
+        // System.out.println("Grounded: " + isGrounded + " VelocityX: " + body.velocityX);
+        return isGrounded; }
     @Override
     public void draw(Batch batch, float parentAlpha) {
         batch.end();
