@@ -189,7 +189,7 @@ public class GameScreen extends BaseScreen {
         float y = lastPlatformY + MathUtils.random(120f, 160f);
         if (y >= chunk.yEnd) return;
 
-        float width = MathUtils.random(500f, SCREEN_WIDTH);
+        float width = MathUtils.random(500f, SCREEN_WIDTH-300f);
         float x = MathUtils.random(0, SCREEN_WIDTH - width);
 
         createGirderInChunk(chunk, x, y, width, PLATFORM_HEIGHT);
