@@ -40,7 +40,8 @@ public class Girder extends Actor {
     public float getSurfaceY(float worldX) {
         float localX = MathUtils.clamp(worldX - getX(), 0, getWidth());
         float t = localX / getWidth();
-        return getY() + slope * t;
+        // Return the Y position + the slope height + the girder's own thickness
+        return getY() + (slope * t) + getHeight();
     }
 
     public boolean hasHole() {
@@ -82,4 +83,7 @@ public class Girder extends Actor {
         DebugRenderer.end();
         batch.begin();
     }
+
+    public float getHoleX() { return holeX; }
+    public float getHoleWidth() { return holeWidth; }
 }

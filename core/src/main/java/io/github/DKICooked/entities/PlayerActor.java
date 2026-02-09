@@ -110,34 +110,44 @@ public class PlayerActor extends Actor {
         bounds.set(getX(), getY(), getWidth(), getHeight());
 
         // ================================
-        // GIRDER GROUNDING
+        // GIRDER GROUNDING (The "Sticky" Fix)
         // ================================
         boolean groundedThisFrame = false;
 
         for (Girder g : girders) {
+            float footX = getX() + getWidth() * 0.5f;
 
-            // Ignore if not horizontally overlapping
-            if (bounds.x + bounds.width < g.getX()
-                || bounds.x > g.getX() + g.getWidth())
-                continue;
+            // 1. Horizontal check
+            if (footX < g.getX() || footX > g.getX() + g.getWidth()) continue;
 
-            float footX = bounds.x + bounds.width * 0.5f;
+            // 2. Hole check
+            if (g.hasHole()) {
+                float localX = footX - g.getX();
+                if (localX >= g.getHoleX() && localX <= g.getHoleX() + g.getHoleWidth()) continue;
+            }
+
             float surfaceY = g.getSurfaceY(footX);
 
-            boolean fallingOnto =
-                body.velocityY <= 0 &&
-                    bounds.y >= surfaceY &&
-                    bounds.y - body.velocityY * dt <= surfaceY + g.getHeight();
+            // 3. The "Snap" Logic
+            // If we are falling (velocityY <= 0) AND our feet are within a
+            // small 'detection zone' (15 pixels) of the surface...
+            float feetY = getY();
+            float detectionZone = 15f;
 
-            if (fallingOnto) {
-                setY(surfaceY);
-                body.velocityY = 0f;
+            if (body.velocityY <= 0 && feetY >= surfaceY - 5f && feetY <= surfaceY + detectionZone) {
+                setY(surfaceY);      // Snap to exact surface
+                body.velocityY = 0;  // Kill downward momentum
                 groundedThisFrame = true;
                 break;
             }
         }
 
         isGrounded = groundedThisFrame;
+
+        // IMPORTANT: If we are grounded, don't let gravity accumulate
+        if (isGrounded && !isCharging) {
+            body.velocityY = 0;
+        }
 
         // ================================
         // CLEANUP

@@ -48,8 +48,9 @@ public class GameScreen extends BaseScreen {
 
         player = new PlayerActor();
         player.setSize(40, 60);
-        player.setPosition(100, 120);
+        player.setPosition(100, 200);
         stage.addActor(player);
+        player.setGirders(activeGirders);
 
         sprite = new PlayerSprite(player);
 
@@ -75,34 +76,82 @@ public class GameScreen extends BaseScreen {
         return chunk;
     }
 
+    private enum ChunkType {
+        ZIG_ZAG,      // Classic DK style
+        THE_GAP,      // Large central gap, requires precise jump power
+        STAGGERED,    // Small floating platforms (Jump King style)
+    }
+
     private void generateChunk(Chunk chunk) {
-        float y = chunk.yStart + 90f;
+        // Pick a random puzzle type
+        ChunkType type = ChunkType.values()[MathUtils.random(ChunkType.values().length - 1)];
+
+        // We can also make it harder based on height
+        if (chunk.index == 0) type = ChunkType.ZIG_ZAG; // Keep start easy
+
+        switch (type) {
+            case ZIG_ZAG:
+                createZigZag(chunk);
+                break;
+            case THE_GAP:
+                createTheGap(chunk);
+                break;
+            case STAGGERED:
+                createStaggered(chunk);
+                break;
+        }
+    }
+
+// --- Puzzle Templates ---
+
+    private void createZigZag(Chunk chunk) {
+        float y = chunk.yStart + 100f;
         boolean slopeLeft = chunk.index % 2 == 0;
 
-        int rows = MathUtils.random(4, 6);
+        for (int i = 0; i < 4; i++) {
+            float slope = slopeLeft ? 30f : -30f;
+            Girder g = new Girder(0, y, SCREEN_WIDTH, GIRDER_HEIGHT, slope);
 
-        for (int i = 0; i < rows; i++) {
-            float slope = slopeLeft ? 45f : -45f;
+            // Create the "climb-up" hole at the end of the slope
+            float holeX = slopeLeft ? SCREEN_WIDTH - 120f : 40f;
+            g.addHole(holeX, 80f);
 
-            Girder girder = new Girder(
-                0,
-                y,
-                SCREEN_WIDTH,
-                GIRDER_HEIGHT,
-                slope
-            );
-
-            // Controlled hole chance
-            if (i > 0 && MathUtils.random() < 0.35f) {
-                float holeWidth = MathUtils.random(90f, 140f);
-                float holeX = MathUtils.random(150f, SCREEN_WIDTH - holeWidth - 150f);
-                girder.addHole(holeX, holeWidth);
-            }
-
-            chunk.girders.add(girder);
-
-            y += MathUtils.random(120f, 150f);
+            chunk.girders.add(g);
+            y += 140f;
             slopeLeft = !slopeLeft;
+        }
+    }
+
+    private void createTheGap(Chunk chunk) {
+        // A huge central hole that requires a near-max charge jump
+        float y = chunk.yStart + 150f;
+
+        // Bottom platform
+        Girder bottom = new Girder(0, y, SCREEN_WIDTH, GIRDER_HEIGHT, 0);
+        bottom.addHole(200, 400); // Massive hole in the middle
+        chunk.girders.add(bottom);
+
+        // Small "island" in the middle of the screen higher up
+        chunk.girders.add(new Girder(350, y + 200, 100, GIRDER_HEIGHT, 0));
+
+        // Top platforms
+        Girder top = new Girder(0, y + 400, SCREEN_WIDTH, GIRDER_HEIGHT, 0);
+        top.addHole(300, 200);
+        chunk.girders.add(top);
+    }
+
+    private void createStaggered(Chunk chunk) {
+        // Jump King style: Tiny platforms that require exact horizontal landing
+        float y = chunk.yStart + 80f;
+        float lastX = 100;
+
+        for (int i = 0; i < 5; i++) {
+            float width = MathUtils.random(80f, 150f);
+            float x = (lastX < 400) ? MathUtils.random(450f, 650f) : MathUtils.random(50f, 250f);
+
+            chunk.girders.add(new Girder(x, y, width, GIRDER_HEIGHT, MathUtils.random(-10f, 10f)));
+            y += 110f;
+            lastX = x;
         }
     }
 
@@ -176,7 +225,7 @@ public class GameScreen extends BaseScreen {
 
     private void drawScreenOutline() {
         DebugRenderer.begin(stage.getCamera());
-        DebugRenderer.renderer.setColor(1, 1, 1, 1);
+        DebugRenderer.renderer.setColor(0, 0, 0, 0);
 
         OrthographicCamera cam = (OrthographicCamera) stage.getCamera();
         DebugRenderer.renderer.rect(
