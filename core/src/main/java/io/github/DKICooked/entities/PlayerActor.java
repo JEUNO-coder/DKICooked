@@ -3,63 +3,47 @@ package io.github.DKICooked.entities;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.utils.Array;
-import io.github.DKICooked.physics.CollisionResolver;
 import io.github.DKICooked.physics.PhysicsBody;
 import io.github.DKICooked.render.DebugRenderer;
-import com.badlogic.gdx.math.Rectangle;
 
 public class PlayerActor extends Actor {
-    private float groundTimer = 0f;
-    private final PhysicsBody body = new PhysicsBody(2000f, 300f, 1300f, -1800f);
+
+    private final PhysicsBody body =
+        new PhysicsBody(2000f, 300f, 1300f, -1800f);
+
     private final Rectangle bounds = new Rectangle();
-    private Array<Platform> platforms = new Array<>();
+    private Array<Girder> girders = new Array<>();
 
-    private float jumpCharge;
-    private final float maxJumpCharge;
-    private final float chargeRate;
+    // Jump charging
+    private float jumpCharge = 0f;
+    private final float maxJumpCharge = 900f;
+    private final float chargeRate = 1600f;
 
-    private boolean isCharging;
-    private boolean isGrounded;
-    private float jumpCooldown;
+    private boolean isCharging = false;
+    private boolean isGrounded = false;
+    private float jumpCooldown = 0f;
 
-    private float stunTime;
-    private final float stunDuration;
-    private final float bounceForce;
+    // Stun / knockback
+    private float stunTime = 0f;
+    private final float stunDuration = 0.25f;
+    private final float bounceForce = 1.25f;
 
-    private float physicsAccumulator;
-
-    private static final float PHYSICS_STEP = 1/180f;
-
-    {
-        // Jump charge
-        maxJumpCharge = 900f;
-        jumpCharge = 0f;
-        chargeRate = 1600f;
-
-        // State
-        isCharging = false;
-        isGrounded = false;
-        jumpCooldown = 0f;
-
-        // Side collision stun
-        stunTime = 0f;
-        stunDuration = 0.3f;
-        bounceForce = 1.3f;
-
-        // Fixed timestep
-        physicsAccumulator = 0f;
-    }
+    // Fixed timestep
+    private float accumulator = 0f;
+    private static final float STEP = 1f / 180f;
 
     @Override
     public void act(float delta) {
         super.act(delta);
 
-        physicsAccumulator += delta;
-        while (physicsAccumulator >= PHYSICS_STEP) {
-            updatePhysics(PHYSICS_STEP);
-            physicsAccumulator -= PHYSICS_STEP;
+        accumulator += delta;
+        while (accumulator >= STEP) {
+            updatePhysics(STEP);
+            accumulator -= STEP;
         }
     }
 
@@ -70,7 +54,9 @@ public class PlayerActor extends Actor {
         if (jumpCooldown > 0f) jumpCooldown -= dt;
         if (stunTime > 0f) stunTime -= dt;
 
-        // ===== JUMP CHARGE =====
+        // ================================
+        // JUMP CHARGING (Jump King style)
+        // ================================
         if (isGrounded && space && jumpCooldown <= 0f && !isCharging) {
             isCharging = true;
             jumpCharge = 0f;
@@ -82,12 +68,14 @@ public class PlayerActor extends Actor {
 
         if (isCharging && !space) {
             body.velocityY = jumpCharge;
-            isGrounded = false;
             isCharging = false;
+            isGrounded = false;
             jumpCooldown = 0.15f;
         }
 
-        // ===== INPUT =====
+        // ================================
+        // HORIZONTAL INPUT
+        // ================================
         float input = 0f;
         if (!isCharging && stunTime <= 0f) {
             if (Gdx.input.isKeyPressed(Input.Keys.A)) input -= 1f;
@@ -96,77 +84,84 @@ public class PlayerActor extends Actor {
 
         body.applyHorizontalInput(input, dt);
 
-        // ==================================================
-        // HORIZONTAL MOVE FIRST
-        // ==================================================
+        // ================================
+        // HORIZONTAL MOVE
+        // ================================
         moveBy(body.velocityX * dt, 0);
         bounds.set(getX(), getY(), getWidth(), getHeight());
 
-        // Resolve SIDE collisions only
-        for (Platform p : platforms) {
-            CollisionResolver.Result r =
-                CollisionResolver.resolve(bounds, body, p);
-
-            if (r == CollisionResolver.Result.HIT_SIDE) {
-                body.velocityX *= bounceForce;
-                stunTime = stunDuration;
-            }
+        // Simple wall bounce (screen bounds)
+        if (getX() < 0 || getX() + getWidth() > 800) {
+            body.velocityX *= -bounceForce;
+            stunTime = stunDuration;
         }
 
-        // Sync actor position with bounds after collision
-        setPosition(bounds.x, bounds.y);
+        setPosition(
+            MathUtils.clamp(getX(), 0, 800 - getWidth()),
+            getY()
+        );
 
-        // ==================================================
-        // VERTICAL MOVE SECOND
-        // ==================================================
-        if (!isGrounded) {
-            body.applyGravity(dt);
-            moveBy(0, body.velocityY * dt);
-        }
+        // ================================
+        // VERTICAL MOVE
+        // ================================
+        body.applyGravity(dt);
+        moveBy(0, body.velocityY * dt);
 
         bounds.set(getX(), getY(), getWidth(), getHeight());
 
-        // Resolve vertical collisions (ground / ceiling)
-        boolean foundGround = false;
-        for (Platform p : platforms) {
-            CollisionResolver.Result r =
-                CollisionResolver.resolve(bounds, body, p);
+        // ================================
+        // GIRDER GROUNDING
+        // ================================
+        boolean groundedThisFrame = false;
 
-            if (r == CollisionResolver.Result.LANDED_ON_TOP) {
-                foundGround = true;
+        for (Girder g : girders) {
+
+            // Ignore if not horizontally overlapping
+            if (bounds.x + bounds.width < g.getX()
+                || bounds.x > g.getX() + g.getWidth())
+                continue;
+
+            float footX = bounds.x + bounds.width * 0.5f;
+            float surfaceY = g.getSurfaceY(footX);
+
+            boolean fallingOnto =
+                body.velocityY <= 0 &&
+                    bounds.y >= surfaceY &&
+                    bounds.y - body.velocityY * dt <= surfaceY + g.getHeight();
+
+            if (fallingOnto) {
+                setY(surfaceY);
+                body.velocityY = 0f;
+                groundedThisFrame = true;
+                break;
             }
         }
 
-        // Sync actor position with bounds after collision
-        setPosition(bounds.x, bounds.y);
+        isGrounded = groundedThisFrame;
 
-        isGrounded = foundGround;
-
-        if (isGrounded) {
-           // groundTimer = 0.1f;
-            body.velocityY = 0f;
-        }
-//        } else {
-//            groundTimer -= dt;
-//            if (groundTimer > 0) isGrounded = true;
-//        }
-
-        // Small horizontal snap-to-zero
+        // ================================
+        // CLEANUP
+        // ================================
         if (Math.abs(body.velocityX) < 0.5f) {
             body.velocityX = 0f;
         }
     }
 
-    public void setPlatforms(Array<Platform> platforms) {
-        this.platforms = platforms;
+    // ================================
+    // API
+    // ================================
+    public void setGirders(Array<Girder> girders) {
+        this.girders = girders;
     }
 
     public PhysicsBody getBody() {
         return body;
     }
+
     public boolean isGrounded() {
-        // System.out.println("Grounded: " + isGrounded + " VelocityX: " + body.velocityX);
-        return isGrounded; }
+        return isGrounded;
+    }
+
     @Override
     public void draw(Batch batch, float parentAlpha) {
         batch.end();
