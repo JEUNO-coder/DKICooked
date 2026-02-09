@@ -22,6 +22,8 @@ public class GameScreen extends BaseScreen {
     private static final float CHUNK_HEIGHT = SCREEN_HEIGHT;
     private static final float GIRDER_HEIGHT = 18f;
 
+    private int highestChunkReached = 0;
+
     private final Main main;
     private final Array<Girder> activeGirders = new Array<>();
 
@@ -76,17 +78,16 @@ public class GameScreen extends BaseScreen {
     }
 
     private enum ChunkType {
-        ZIG_ZAG,      // Classic DK style
-        THE_GAP,      // Large central gap, requires precise jump power
-        STAGGERED,    // Small floating platforms (Jump King style)
+        ZIG_ZAG,
+        THE_GAP,
+        STAGGERED,
     }
 
     private void generateChunk(Chunk chunk) {
         // Pick a random puzzle type
         ChunkType type = ChunkType.values()[MathUtils.random(ChunkType.values().length - 1)];
 
-        // We can also make it harder based on height
-        if (chunk.index == 0) type = ChunkType.ZIG_ZAG; // Keep start easy
+        if (chunk.index == 0) type = ChunkType.ZIG_ZAG;
 
         switch (type) {
             case ZIG_ZAG:
@@ -122,7 +123,6 @@ public class GameScreen extends BaseScreen {
     }
 
     private void createTheGap(Chunk chunk) {
-        // A huge central hole that requires a near-max charge jump
         float y = chunk.yStart + 150f;
 
         // Bottom platform
@@ -140,7 +140,6 @@ public class GameScreen extends BaseScreen {
     }
 
     private void createStaggered(Chunk chunk) {
-        // Jump King style: Tiny platforms that require exact horizontal landing
         float y = chunk.yStart + 80f;
         float lastX = 100;
 
@@ -175,28 +174,36 @@ public class GameScreen extends BaseScreen {
     private void updateChunks() {
         int playerChunk = (int)(player.getY() / CHUNK_HEIGHT);
 
-        // --- GAME OVER CHECK ---
-        // If the player falls below the current active chunk into an unloaded zone
-        if (playerChunk < currentChunk - 2 || player.getY() < -50f) {
-            // Trigger Game Over / Back to Menu
-            main.setScreen(new MainMenuScreen(main));
+        // UPDATE HIGHEST POINT
+        if (playerChunk > highestChunkReached) {
+            highestChunkReached = playerChunk;
+        }
+
+        // GAME OVER CHECK
+        if (highestChunkReached > 0 && playerChunk < highestChunkReached - 1) {
+            /*
+
+              FOR GAME OVER SCREEN REPLACE setScreen
+
+            */
+            Gdx.app.postRunnable(() -> main.setScreen(new MainMenuScreen(main)));
             return;
         }
 
+        // CHUNK & CAMERA MANAGEMENT
         if (playerChunk != currentChunk) {
-            // If climbing up
-            if (playerChunk > currentChunk) {
-                currentChunk = playerChunk;
-                getOrCreateChunk(playerChunk + 1);
+            currentChunk = playerChunk;
 
-                // Unload anything 2 chunks below
-                for (IntMap.Entry<Chunk> e : chunks) {
-                    if (e.key < playerChunk - 1) {
-                        unloadChunk(e.value);
-                    }
+            getOrCreateChunk(currentChunk);
+            getOrCreateChunk(currentChunk + 1);
+            if (currentChunk > 0) getOrCreateChunk(currentChunk - 1);
+
+            for (IntMap.Entry<Chunk> e : chunks) {
+                if (Math.abs(e.key - currentChunk) > 1) {
+                    unloadChunk(e.value);
                 }
             }
-            snapCamera(playerChunk);
+            snapCamera(currentChunk);
         }
     }
 
