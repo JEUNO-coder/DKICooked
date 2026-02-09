@@ -1,33 +1,30 @@
 # DonkeyKongInf
 
-A [libGDX](https://libgdx.com/) project generated with [gdx-liftoff](https://github.com/libgdx/gdx-liftoff).
+A 2D platformer prototype built with **libGDX**.  
+This project focuses on custom player physics, collision resolution, and clean separation between rendering, input, and physics.
 
-This project was generated with a template including simple application launchers and an `ApplicationAdapter` extension that draws libGDX logo.
+## Status
+**Work in progress**  
+Core movement and collision systems are actively being developed and refactored.
 
-## Platforms
+## Features (current)
+- Custom player physics (acceleration, friction, gravity)
+- Charge-based jump system
+- Solid platform collision (ground, ceiling, side hits)
+- Fixed-timestep physics update
+- Debug rendering using ShapeRenderer
 
-- `core`: Main module with the application logic shared by all platforms.
-- `lwjgl3`: Primary desktop platform using LWJGL3; was called 'desktop' in older docs.
+## Controls
+- **A / D** — Move left / right  
+- **Space** — Hold to charge jump, release to jump
 
-## Gradle
+## Tech Stack
+- Java
+- libGDX
+- Scene2D
+- Gradle
 
-This project uses [Gradle](https://gradle.org/) to manage dependencies.
-The Gradle wrapper was included, so you can run Gradle tasks using `gradlew.bat` or `./gradlew` commands.
-Useful Gradle tasks and flags:
-
-- `--continue`: when using this flag, errors will not stop the tasks from running.
-- `--daemon`: thanks to this flag, Gradle daemon will be used to run chosen tasks.
-- `--offline`: when using this flag, cached dependency archives will be used.
-- `--refresh-dependencies`: this flag forces validation of all dependencies. Useful for snapshot versions.
-- `build`: builds sources and archives of every project.
-- `cleanEclipse`: removes Eclipse project data.
-- `cleanIdea`: removes IntelliJ project data.
-- `clean`: removes `build` folders, which store compiled classes and built archives.
-- `eclipse`: generates Eclipse project data.
-- `idea`: generates IntelliJ project data.
-- `lwjgl3:jar`: builds application's runnable jar, which can be found at `lwjgl3/build/libs`.
-- `lwjgl3:run`: starts the application.
-- `test`: runs unit tests (if any).
-
-Note that most tasks that are not specific to a single project can be run with `name:` prefix, where the `name` should be replaced with the ID of a specific project.
-For example, `core:clean` removes `build` folder only from the `core` project.
+## How to Run
+1. Clone the repository
+2. Open the project in **IntelliJ IDEA**
+3. Run the `DesktopLauncher` configuration
