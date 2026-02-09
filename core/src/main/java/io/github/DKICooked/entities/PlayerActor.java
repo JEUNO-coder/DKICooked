@@ -10,6 +10,7 @@ import com.badlogic.gdx.utils.Array;
 import io.github.DKICooked.physics.PhysicsBody;
 import io.github.DKICooked.render.DebugRenderer;
 
+@SuppressWarnings("ALL")
 public class PlayerActor extends Actor {
 
     private final PhysicsBody body =

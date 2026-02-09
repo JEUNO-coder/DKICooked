@@ -1,7 +1,6 @@
 package io.github.DKICooked.physics;
 
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.scenes.scene2d.Actor;
 
 public class PhysicsBody {
 
@@ -42,9 +41,5 @@ public class PhysicsBody {
 
     public void applyGravity(float delta) {
         velocityY += gravity * delta;
-    }
-
-    public void move(Actor actor, float delta) {
-        actor.moveBy(velocityX * delta, velocityY * delta);
     }
 }

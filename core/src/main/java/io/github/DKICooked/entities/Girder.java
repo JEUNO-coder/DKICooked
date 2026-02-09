@@ -59,15 +59,10 @@ public class Girder extends Actor {
         float w = getWidth();
         float h = getHeight();
 
-        // Calculate the Y offset for the right side based on slope
-        // Note: slope is the total vertical rise across the width
-        float rightSideYOffset = slope;
 
         if (hasHole()) {
             // Draw Left Segment
             float holeStartX = holeX;
-            float holeStartTopY = y + h + (slope * (holeStartX / w));
-            float holeStartBottomY = y + (slope * (holeStartX / w));
 
             // Connect (x, y) to (x+holeX, holeStartBottomY) etc.
             drawSlopedRect(x, y, holeStartX, h, slope * (holeStartX / w));

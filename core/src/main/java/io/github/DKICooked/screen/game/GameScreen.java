@@ -62,18 +62,17 @@ public class GameScreen extends BaseScreen {
 
     // ------------------------------------------------------
 
-    private Chunk getOrCreateChunk(int index) {
+    private void getOrCreateChunk(int index) {
         if (chunks.containsKey(index)) {
             Chunk c = chunks.get(index);
             if (!c.loaded) loadChunk(c);
-            return c;
+            return;
         }
 
         Chunk chunk = new Chunk(index);
         generateChunk(chunk);
         chunks.put(index, chunk);
         loadChunk(chunk);
-        return chunk;
     }
 
     private enum ChunkType {
@@ -248,8 +247,4 @@ public class GameScreen extends BaseScreen {
         DebugRenderer.end();
     }
 
-    @Override
-    public void dispose() {
-        stage.dispose();
-    }
 }
