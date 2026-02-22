@@ -119,10 +119,8 @@ public class PlayerActor extends Actor {
         for (Girder g : girders) {
             float footX = getX() + getWidth() * 0.5f;
 
-            // 1. Horizontal check
             if (footX < g.getX() || footX > g.getX() + g.getWidth()) continue;
 
-            // 2. Hole check
             if (g.hasHole()) {
                 float localX = footX - g.getX();
                 if (localX >= g.getHoleX() && localX <= g.getHoleX() + g.getHoleWidth()) continue;
@@ -130,17 +128,35 @@ public class PlayerActor extends Actor {
 
             float surfaceY = g.getSurfaceY(footX);
 
-            // 3. The "Snap" Logic
-            // If we are falling (velocityY <= 0) AND our feet are within a
-            // small 'detection zone' (15 pixels) of the surface...
             float feetY = getY();
             float detectionZone = 15f;
 
             if (body.velocityY <= 0 && feetY >= surfaceY - 5f && feetY <= surfaceY + detectionZone) {
-                setY(surfaceY);      // Snap to exact surface
-                body.velocityY = 0;  // Kill downward momentum
+                setY(surfaceY);
+                body.velocityY = 0;
                 groundedThisFrame = true;
                 break;
+            }
+
+            float playerTop = getY() + getHeight();
+            float playerBottom = getY();
+            float playerLeft = getX();
+            float playerRight = getX() + getWidth();
+
+            if (body.velocityY > 0 && playerTop >= g.getY() && playerTop <= g.getY() + 10f) {
+                if (playerRight > g.getX() && playerLeft < g.getX() + g.getWidth()) {
+                    setY(g.getY() - getHeight()); // Snap to below girder
+                    body.velocityY = -100f;       // Bonk downwards
+                }
+            }
+
+            if (!groundedThisFrame) {
+                if (playerRight >= g.getX() && playerLeft <= g.getX() + g.getWidth()) {
+                    if (playerBottom < g.getY() + g.getHeight() && playerTop > g.getY()) {
+                        body.velocityX *= -bounceForce; // Reflect and boost
+                        stunTime = stunDuration;        // Lose control
+                    }
+                }
             }
         }
 
