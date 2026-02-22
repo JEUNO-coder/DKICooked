@@ -5,79 +5,87 @@ import com.badlogic.gdx.utils.Array;
 import io.github.DKICooked.entities.Platform;
 
 public class LevelGenerator {
-    private static final float SCREEN_WIDTH = 800f;
-    private static final float MARGIN = 100f;
+    private final float SCREEN_WIDTH = 800f;
+    private final float MARGIN = 120f;
+    private final float MAX_JUMP_H = 225f;
+    private final float MAX_JUMP_W = 300f;
 
-    // Physical constraints derived from PlayerActor
-    private final float MAX_JUMP_HEIGHT = 180f;
-    private final float MAX_JUMP_WIDTH = 300f;
-
-    private float lastX = 400f;
-    private float lastY = 50f;
+    // THESE MUST BE OUTSIDE THE METHOD TO PERSIST BETWEEN CHUNKS
+    private float anchor1X = 300f, anchor1Y = 50f;
+    private float anchor2X = 500f, anchor2Y = 50f;
 
     public Array<Platform> generateChunk(float chunkYStart, float chunkHeight) {
         Array<Platform> platforms = new Array<>();
         float chunkTop = chunkYStart + chunkHeight;
 
-        // 1. CONDITIONAL SAFETY NET
-        // Only place the wide floor if this is the absolute beginning of the game.
+        // 1. THE STITCH: If this isn't the first chunk, we MUST anchor to the previous one
         if (chunkYStart == 0) {
-            float netWidth = SCREEN_WIDTH - 40;
-            platforms.add(new Platform(20, 50, 20 + netWidth, 50));
-            lastX = 400f; // Start player in the center
-            lastY = 50f;
+            platforms.add(new Platform(0, 50, SCREEN_WIDTH, 50));
+            anchor1X = 300f; anchor2X = 500f;
+            anchor1Y = anchor2Y = 80f;
         }
 
-        // 2. THE ANCHOR SYSTEM: Generate the "Main Vein"
-        while (lastY < chunkTop - 100f) {
-            // Calculate the "Reachability Donut"
-            // We want to move at least 40% of max height, but no more than 90%
-            float jumpY = MathUtils.random(MAX_JUMP_HEIGHT * 0.4f, MAX_JUMP_HEIGHT * 0.9f);
-            // Force a minimum horizontal jump distance of 150 pixels
-            float jumpX = MathUtils.random(150f, MAX_JUMP_WIDTH * 0.8f);
-            if (MathUtils.randomBoolean()) jumpX *= -1; // Randomly go left or right
+        // 2. DUAL-PATH GENERATION
+        // We continue until the paths reach the top of THIS specific chunk
+        while (anchor1Y < chunkTop - 150f || anchor2Y < chunkTop - 150f) {
 
-            float nextX = MathUtils.clamp(lastX + jumpX, MARGIN, SCREEN_WIDTH - MARGIN);
-            float nextY = lastY + jumpY;
+            // Generate Path 1 (Left Option)
+            if (anchor1Y < chunkTop - 150f) {
+                anchor1Y = attemptStep(platforms, anchor1X, anchor1Y, true);
+                anchor1X = lastX;
+            }
 
-            // GEOMETRY CLEANUP: 100% horizontal, minimum 1.5x player width
-            float width = MathUtils.random(100f, 160f);
-            Platform potential = createPlatformFromCenter(nextX, nextY, width, 0);
-
-            // 3. THE HEAD-BONK FILTER
-            if (isPathClear(potential, platforms)) {
-                platforms.add(potential);
-                lastX = nextX;
-                lastY = nextY;
+            // Generate Path 2 (Right Option)
+            if (anchor2Y < chunkTop - 150f) {
+                anchor2Y = attemptStep(platforms, anchor2X, anchor2Y, false);
+                anchor2X = lastX;
             }
         }
         return platforms;
     }
 
-    private boolean isPathClear(Platform newP, Array<Platform> existing) {
-        for (Platform other : existing) {
-            float xDist = Math.abs(newP.x1 - other.x1);
-            float yDist = Math.abs(newP.y1 - other.y1);
+    private float lastX; // Temporary storage
 
-            // 1. THE VERTICAL COLUMN RULE
-            // If platforms are within 150px horizontally, they are "stacking"
-            if (xDist < 150f) {
-                // They MUST be at least 200px apart vertically to allow for a jump arc
-                if (yDist < 200f) return false;
+    private float attemptStep(Array<Platform> platforms, float curX, float curY, boolean leftPath) {
+        // Use 80% of max jump for a "Safe" human-reachable distance
+        float jumpY = MAX_JUMP_H * MathUtils.random(0.65f, 0.82f);
+        float jumpX = MAX_JUMP_W * MathUtils.random(0.4f, 0.75f) * (MathUtils.randomBoolean() ? 1 : -1);
+
+        float nX = MathUtils.clamp(curX + jumpX, MARGIN, SCREEN_WIDTH - MARGIN);
+        float nY = curY + jumpY;
+
+        Platform p = new Platform(nX - 60, nY, nX + 60, nY);
+
+        // 3. THE "ARC" CHECK: Ensure nothing blocks the head mid-jump
+        if (isPathPlayable(curX, curY, p, platforms)) {
+            // Sporadic Architecture: Thickness + Occasional Back-Walls
+            p.thickness = MathUtils.randomBoolean(0.3f) ? 50f : 10f;
+
+            if (MathUtils.randomBoolean(0.3f)) { // Only 30% have walls
+                float wallX = (nX > curX) ? p.x2 - 12 : p.x1;
+                platforms.add(new Platform(wallX, p.y1, wallX + 12, p.y1 + 100));
             }
 
-            // 2. THE DIAGONAL BONK RULE
-            // Even if they don't overlap perfectly, if one is just slightly
-            // above and to the side, it will catch the player's head.
-            if (xDist < 200f && yDist < 160f) {
-                return false;
+            platforms.add(p);
+            lastX = nX;
+            return nY;
+        }
+
+        lastX = curX;
+        return curY + 40f; // Nudge up to try finding a valid spot
+    }
+
+    private boolean isPathPlayable(float startX, float startY, Platform target, Array<Platform> existing) {
+        for (Platform other : existing) {
+            // Horizontal overlap check
+            float overlap = Math.min(target.x2, other.x2) - Math.max(target.x1, other.x1);
+
+            // If they overlap, we need a 170px vertical "Headroom" corridor
+            if (overlap > -30f) {
+                float gap = Math.abs(other.y1 - startY);
+                if (gap < 170f && other.y1 > startY) return false;
             }
         }
         return true;
-    }
-
-    private Platform createPlatformFromCenter(float x, float y, float width, float slope) {
-        // Force slope to 0 for geometry cleanup
-        return new Platform(x - width/2, y, x + width/2, y);
     }
 }
