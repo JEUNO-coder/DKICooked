@@ -21,7 +21,6 @@ public class PlayerActor extends Actor {
     private boolean isCharging = false;
     private boolean isGrounded = false;
     private float jumpCooldown = 0f;
-    public boolean facingRight = true;
 
     // Stun / knockback logic
     private float stunTime = 0f;
