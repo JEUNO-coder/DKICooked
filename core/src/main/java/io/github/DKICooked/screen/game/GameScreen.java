@@ -78,16 +78,6 @@ public class GameScreen extends BaseScreen {
         world.update(player.getY());
         player.setPlatforms(world.getActivePlatforms());
 
-        // Calculate current height in "meters"
-        // (Dividing by 100 makes the number feel more like a measurement)
-        int currentHeight = (int) (player.getY() / 100f);
-        int maxHeight = (int) ((highestChunkReached * 600f + player.getY() % 600f) / 100f);
-
-        // Update the label text efficiently
-        scoreBuilder.setLength(0);
-        scoreBuilder.append("Height: ").append(currentHeight).append("m");
-        scoreLabel.setText(scoreBuilder);
-
         world.update(player.getY());
         player.setPlatforms(world.getActivePlatforms());
 
@@ -104,6 +94,7 @@ public class GameScreen extends BaseScreen {
             Gdx.app.postRunnable(() -> main.setScreen(new MainMenuScreen(main)));
         }
 
+        int currentHeight = (int) (player.getY() / 100f);
         if (currentHeight > recordHeight) {
             recordHeight = currentHeight;
         }
