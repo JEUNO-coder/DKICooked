@@ -48,9 +48,9 @@ public class PlayerSprite {
             frame = idleRegion;
         }
 
-        if (player.facingRight && frame.isFlipX()) {
+        if (player.isFacingRight() && frame.isFlipX()) {
             frame.flip(true, false);
-        } else if (!player.facingRight && !frame.isFlipX()) {
+        } else if (!player.isFacingRight() && !frame.isFlipX()) {
             frame.flip(true, false);
         }
 
