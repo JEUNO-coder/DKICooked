@@ -43,6 +43,7 @@ public class PlayerActor extends Actor {
             accumulator -= STEP;
         }
     }
+    public boolean facingRight = true;
 
     private void updatePhysics(float dt) {
         // 1. CAPTURE PREVIOUS STATE

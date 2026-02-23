@@ -28,7 +28,7 @@ public class PausedScreen extends Table {
 
         //For bg
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGB888);
-        pixmap.setColor(Color.GRAY);
+        pixmap.setColor(Color.BLACK);
         pixmap.fill();
 
         Texture greyBg = new Texture(pixmap);
