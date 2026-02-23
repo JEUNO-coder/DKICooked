@@ -4,6 +4,13 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.IntMap;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -35,6 +42,11 @@ public class GameScreen extends BaseScreen {
     private int currentChunk = 0;
     private int highestChunkReached = 0;
 
+    private PausedScreen pause;
+    private boolean paused = false;
+    Table uiTable = new Table();
+    private ImageButton pauseButton;
+
     private static class Chunk {
         int index;
         float yStart;
@@ -63,6 +75,8 @@ public class GameScreen extends BaseScreen {
 
         // Pass initial platforms to player
         updateActivePlatformsList();
+
+        displayPause();
 
         snapCamera(0);
     }
@@ -112,9 +126,17 @@ public class GameScreen extends BaseScreen {
     }
 
     private void snapCamera(int chunkIndex) {
+        float newY = chunkIndex * CHUNK_HEIGHT;
         OrthographicCamera cam = (OrthographicCamera) stage.getCamera();
-        cam.position.set(SCREEN_WIDTH / 2, chunkIndex * CHUNK_HEIGHT + SCREEN_HEIGHT / 2, 0);
+        cam.position.set(SCREEN_WIDTH / 2, newY + SCREEN_HEIGHT / 2, 0);
         cam.update();
+
+        if (uiTable != null) {
+            uiTable.setPosition(0, newY);
+        }
+        if (pause != null) {
+            pause.setPosition(0, newY);
+        }
     }
 
     @Override
@@ -145,6 +167,36 @@ public class GameScreen extends BaseScreen {
         batch.begin();
         sprite.draw(batch, player);
         batch.end();
+    }
+
+    public void displayPause() {
+        Texture pauseTex = new Texture(Gdx.files.internal("Pause.png"));
+        ImageButton.ImageButtonStyle pauseStyle = new ImageButton.ImageButtonStyle();
+        pauseStyle.imageUp = new TextureRegionDrawable(new TextureRegion(pauseTex));
+
+        pauseButton = new ImageButton(pauseStyle);
+
+        uiTable = new Table();
+        uiTable.setFillParent(true); // This makes the table the size of the screen
+        uiTable.top().right();
+        uiTable.add(pauseButton).size(40, 40).pad(10);
+
+        stage.addActor(uiTable);
+
+        // Initialize Pause Screen Logic
+        pause = new PausedScreen(() -> {
+            paused = false;
+            pause.toggle(false);
+        }, main);
+        stage.addActor(pause);
+
+        pauseButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                paused = !paused;
+                pause.toggle(paused);
+            }
+        });
     }
 
     @Override
