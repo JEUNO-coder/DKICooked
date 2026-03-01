@@ -2,6 +2,7 @@ package io.github.DKICooked.entities;
 
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.utils.Array;
+import io.github.DKICooked.audio.SoundPlayer;
 import io.github.DKICooked.gameLogic.physics.PhysicsBody;
 import io.github.DKICooked.gameLogic.physics.PlayerPhysicsProcessor;
 
@@ -12,8 +13,8 @@ public class PlayerActor extends Actor {
     private float accumulator = 0f;
     private static final float STEP = 1f / 180f;
 
-    public PlayerActor() {
-        this.physicsProcessor = new PlayerPhysicsProcessor(this, body);
+    public PlayerActor(SoundPlayer soundPlayer) {
+        this.physicsProcessor = new PlayerPhysicsProcessor(this, body, soundPlayer);
     }
 
     @Override

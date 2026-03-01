@@ -6,10 +6,12 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
 import io.github.DKICooked.entities.Platform;
 import io.github.DKICooked.entities.PlayerActor;
+import io.github.DKICooked.audio.SoundPlayer;
 
 public class PlayerPhysicsProcessor {
     private final PlayerActor player;
     private final PhysicsBody body;
+    private final SoundPlayer soundPlayer;
 
     public float jumpCharge = 0f;
     public final float maxJumpCharge = 900f;
@@ -20,9 +22,10 @@ public class PlayerPhysicsProcessor {
     public float stunTime = 0f;
     public boolean facingRight = true;
 
-    public PlayerPhysicsProcessor(PlayerActor player, PhysicsBody body) {
+    public PlayerPhysicsProcessor(PlayerActor player, PhysicsBody body, SoundPlayer soundPlayer) {
         this.player = player;
         this.body = body;
+        this.soundPlayer = soundPlayer;
     }
 
     public void update(float dt, Array<Platform> platforms) {
@@ -57,6 +60,7 @@ public class PlayerPhysicsProcessor {
             isCharging = false;
             isGrounded = false;
             jumpCooldown = 0.15f;
+            soundPlayer.playJump();
         }
     }
 

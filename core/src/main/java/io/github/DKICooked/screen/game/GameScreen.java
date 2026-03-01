@@ -25,6 +25,8 @@ import io.github.DKICooked.screen.BaseScreen;
 import io.github.DKICooked.screen.main.MainMenuScreen;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import io.github.DKICooked.audio.SoundPlayer;
+import io.github.DKICooked.audio.SoundPlayer;
 
 public class GameScreen extends BaseScreen {
 
@@ -35,6 +37,8 @@ public class GameScreen extends BaseScreen {
     private final WorldManager world;
     private final PlayerActor player;
     private final PlayerSprite sprite;
+
+    private SoundPlayer soundPlayer;
 
     // THE SECOND STAGE
     private final Stage uiStage;
@@ -50,13 +54,16 @@ public class GameScreen extends BaseScreen {
     public GameScreen(Main main) {
         this.main = main;
 
+        soundPlayer = new SoundPlayer();
+        soundPlayer.playMusic();
+
         // 1. Initialize UI Stage with a FIXED viewport
         // This stage never moves, so 0,0 is always bottom-left of screen
         this.uiStage = new Stage(new FitViewport(SCREEN_WIDTH, SCREEN_HEIGHT));
 
         // 2. Setup World
         this.world = new WorldManager();
-        player = new PlayerActor();
+        player = new PlayerActor(soundPlayer);
         player.setSize(40, 60);
         player.setPosition(400, 150);
         player.setPlatforms(world.getActivePlatforms());
