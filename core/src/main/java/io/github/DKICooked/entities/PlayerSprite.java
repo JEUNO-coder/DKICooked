@@ -12,16 +12,18 @@ public class PlayerSprite {
     private Texture idleText;
     private Animation<TextureRegion> walkAnim;
     private Texture jumpText;
+    private Texture chargeText;
+    private final TextureRegion chargeReg;
 
     private float stateTime;
 
     public PlayerSprite(PlayerActor player) {
-            idleText = new Texture(Gdx.files.internal("StandR.png"));
+            idleText = new Texture(Gdx.files.internal("tidle.png"));
             idleRegion = new TextureRegion(idleText);
 
-            Texture walk1 = new Texture(Gdx.files.internal("Walk1R.png"));
-            Texture walk2 = new Texture(Gdx.files.internal("Walk2R.png"));
-            Texture walk3 = new Texture(Gdx.files.internal("Walk3R.png"));
+            Texture walk1 = new Texture(Gdx.files.internal("tW1.png"));
+            Texture walk2 = new Texture(Gdx.files.internal("tW2.png"));
+            Texture walk3 = new Texture(Gdx.files.internal("tW3.png"));
 
             walkAnim = new Animation<>(0.1f,
                 new TextureRegion(walk1),
@@ -29,10 +31,15 @@ public class PlayerSprite {
                 new TextureRegion(walk3)
                 );
 
-            jumpText = new Texture(Gdx.files.internal("JumpR.png"));
+            jumpText = new Texture(Gdx.files.internal("tJ.png"));
             jumpRegion = new TextureRegion(jumpText);
 
+            chargeText = new Texture(Gdx.files.internal("tLC.png"));
+            chargeReg = new TextureRegion(chargeText);
+
             stateTime = 0f;
+
+
     }
 
     public void draw(Batch batch, PlayerActor player) {
@@ -48,9 +55,14 @@ public class PlayerSprite {
             frame = idleRegion;
         }
 
-        if (player.isFacingRight() && frame.isFlipX()) {
+        if (player.isCharging()) {
+            stateTime = 0f;
+            frame = chargeReg;
+        }
+
+        if (!player.isFacingRight() && frame.isFlipX()) {
             frame.flip(true, false);
-        } else if (!player.isFacingRight() && !frame.isFlipX()) {
+        } else if (player.isFacingRight() && !frame.isFlipX()) {
             frame.flip(true, false);
         }
 
