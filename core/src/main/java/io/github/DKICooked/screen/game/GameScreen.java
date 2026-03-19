@@ -52,6 +52,12 @@ public class GameScreen extends BaseScreen {
     private PlatformTiles platformTile;
     private Texture playerFallenTexture;
 
+    private Label finalScoreLabel;
+    private Texture titleTex;
+    private Texture retryTex;
+
+    private Texture whitePixel;
+
     // THE SECOND STAGE
     private final Stage uiStage;
 
@@ -156,6 +162,12 @@ public class GameScreen extends BaseScreen {
 
     private void showGameOverScreen() {
         currentState = State.GAMEOVER;
+        paused = true;
+
+        if(finalScoreLabel != null) {
+            finalScoreLabel.setText("Best Score: " + recordHeight + "m");
+        }
+
         gameOverTable.setVisible(true);
     }
 
@@ -247,16 +259,38 @@ public class GameScreen extends BaseScreen {
         setupGameOverUI();
     }
 
-    private void setupGameOverUI() {
-        Texture retryTex = new Texture(Gdx.files.internal("retry.png"));
-        TextureRegionDrawable retryDrawable = new TextureRegionDrawable(new TextureRegion(retryTex));
+    private Texture createWhitePixel() {
+        com.badlogic.gdx.graphics.Pixmap pixmap = new com.badlogic.gdx.graphics.Pixmap(1, 1, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888);
+        pixmap.setColor(Color.WHITE);
+        pixmap.fill();
+        Texture texture = new Texture(pixmap);
+        pixmap.dispose();
+        return texture;
+    }
 
+    private void setupGameOverUI() {
+        retryTex = new Texture(Gdx.files.internal("retry.png"));
+        TextureRegionDrawable retryDrawable = new TextureRegionDrawable(new TextureRegion(retryTex));
         ImageButton retryButton = new ImageButton(retryDrawable);
+
+        titleTex = new Texture(Gdx.files.internal("GO.png")); // Your title filename
+        com.badlogic.gdx.scenes.scene2d.ui.Image titleImage = new com.badlogic.gdx.scenes.scene2d.ui.Image(titleTex);
+
+        Label.LabelStyle scoreStyle = new Label.LabelStyle(new BitmapFont(), Color.WHITE);
+        finalScoreLabel = new Label("Best Score: 0m", scoreStyle);
+        finalScoreLabel.setFontScale(2f);
 
         gameOverTable = new Table();
         gameOverTable.setFillParent(true); // Matches the size of the uiStage
         gameOverTable.center();            // Puts everything in the middle
 
+        Texture pixel = createWhitePixel();
+        TextureRegionDrawable bgDrawable = new TextureRegionDrawable(new TextureRegion(pixel));
+
+        gameOverTable.setBackground(bgDrawable.tint(new Color(0, 0, 0, 0.6f)));
+
+        gameOverTable.add(titleImage).size(400, 100).padBottom(20).row();
+        gameOverTable.add(finalScoreLabel).padBottom(40).row();
         gameOverTable.add(retryButton).size(100, 100);
 
         // 5. Add the "Click" logic to restart the game
@@ -281,11 +315,10 @@ public class GameScreen extends BaseScreen {
     @Override
     public void dispose() {
         uiStage.dispose();
-        if (playerFallenTexture != null) {
-            playerFallenTexture.dispose();
-        }
-        if (platformTileTexture != null) {
-            platformTileTexture.dispose(); // Crucial for preventing memory leaks!
-        }// BaseScreen usually handles 'stage'
+        if (playerFallenTexture != null) playerFallenTexture.dispose();
+        if (platformTileTexture != null) platformTileTexture.dispose();
+        if (titleTex != null) titleTex.dispose();
+        if (retryTex != null) retryTex.dispose();
+        if (whitePixel != null) whitePixel.dispose();
     }
 }
