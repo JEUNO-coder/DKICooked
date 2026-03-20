@@ -27,7 +27,7 @@ import io.github.DKICooked.gameLogic.WorldManager;
 import io.github.DKICooked.screen.BaseScreen;
 
 public class GameScreen extends BaseScreen {
-
+    private final String selection;
     private enum State { PLAYING, DYING, GAMEOVER }
     private State currentState = State.PLAYING;
     private float deathTimer = 0f;
@@ -69,8 +69,9 @@ public class GameScreen extends BaseScreen {
 
     private int recordHeight = 0;
 
-    public GameScreen(Main main) {
+    public GameScreen(Main main, String selection) {
         this.main = main;
+        this.selection = selection;
 
         backgroundTexture    = new Texture(Gdx.files.internal("background_new.png"));
         playerFallenTexture  = new Texture(Gdx.files.internal("dead.png"));
@@ -92,7 +93,7 @@ public class GameScreen extends BaseScreen {
         player.setPosition(400, 150);
         player.setPlatforms(world.getActivePlatforms());
         stage.addActor(player);
-        sprite = new PlayerSprite(player);
+        sprite = new PlayerSprite(selection);
 
         // Input — UI gets first dibs
         InputMultiplexer multiplexer = new InputMultiplexer();
@@ -290,7 +291,7 @@ public class GameScreen extends BaseScreen {
         retryButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                main.setScreen(new GameScreen(main));
+                main.setScreen(new GameScreen(main, selection));
             }
         });
 
@@ -309,6 +310,7 @@ public class GameScreen extends BaseScreen {
     @Override
     public void dispose() {
         uiStage.dispose();
+        if (sprite != null) sprite.dispose();
         if (scoreFont           != null) scoreFont.dispose();
         if (gameOverFont        != null) gameOverFont.dispose();
         if (playerFallenTexture != null) playerFallenTexture.dispose();

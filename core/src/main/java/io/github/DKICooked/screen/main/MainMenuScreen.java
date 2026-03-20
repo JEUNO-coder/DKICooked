@@ -15,6 +15,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Scaling;
 import io.github.DKICooked.Main;
 import io.github.DKICooked.screen.BaseScreen;
+import io.github.DKICooked.screen.game.CharacterSelectScreen;
 import io.github.DKICooked.screen.game.GameScreen;
 
 public class MainMenuScreen extends BaseScreen {
@@ -108,7 +109,7 @@ public class MainMenuScreen extends BaseScreen {
         startButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                main.setScreen(new GameScreen(main));
+                main.setScreen(new CharacterSelectScreen(main));
                 System.out.println("Start Button was clicked");
 
             }
