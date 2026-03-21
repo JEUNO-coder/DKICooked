@@ -47,6 +47,7 @@ public class GameScreen extends BaseScreen {
     private PlatformTiles platformTile;
     private Texture playerFallenTexture;
     private Texture backgroundTexture;
+    private Texture railTexture;
     private Texture titleTex;
     private Texture retryTex;
     private Texture whitePixel;
@@ -72,8 +73,6 @@ public class GameScreen extends BaseScreen {
     public GameScreen(Main main, String selection) {
         this.main = main;
         this.selection = selection;
-
-        backgroundTexture    = new Texture(Gdx.files.internal("background_new.png"));
         playerFallenTexture  = new Texture(Gdx.files.internal("dead.png"));
 
         soundPlayer = new SoundPlayer();
@@ -95,6 +94,11 @@ public class GameScreen extends BaseScreen {
         stage.addActor(player);
         sprite = new PlayerSprite(selection);
 
+        backgroundTexture = new Texture(Gdx.files.internal("background.png"));
+        railTexture = new Texture(Gdx.files.internal("rail.png"));
+        backgroundTexture.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
+        railTexture.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
+
         // Input — UI gets first dibs
         InputMultiplexer multiplexer = new InputMultiplexer();
         multiplexer.addProcessor(uiStage);
@@ -108,7 +112,6 @@ public class GameScreen extends BaseScreen {
     // ── Update ────────────────────────────────────────────────────────────────
 
     private void updateLogic(float delta) {
-        // ESC toggle with debounce
         boolean escDown = Gdx.input.isKeyPressed(Input.Keys.ESCAPE);
         if (escDown && !escWasPressed) {
             paused = !paused;
@@ -117,32 +120,34 @@ public class GameScreen extends BaseScreen {
         escWasPressed = escDown;
 
         if (currentState == State.PLAYING) {
-            // Single update per frame
             world.update(player.getY());
             player.setPlatforms(world.getActivePlatforms());
 
             int currentChunk = world.getCurrentChunk();
 
-            // Advance high-water mark and snap camera only on chunk change
             if (currentChunk > highestChunkReached) {
                 highestChunkReached = currentChunk;
             }
+
             if (currentChunk != lastSnapChunk) {
                 snapCamera(currentChunk);
                 lastSnapChunk = currentChunk;
             }
 
-            // Death: fell two chunks behind the highest reached
             if (highestChunkReached > 0 && currentChunk < highestChunkReached - 1) {
                 startDeathSequence();
             }
 
+            // Calculate and update score text
             int currentHeight = (int) (player.getY() / 100f);
             if (currentHeight > recordHeight) recordHeight = currentHeight;
 
+            scoreBuilder.setLength(0);
+            scoreBuilder.append("Best: ").append(recordHeight).append("m");
+            scoreLabel.setText(scoreBuilder);
+
         } else if (currentState == State.DYING) {
             deathTimer += delta;
-
             float bounce = (float) Math.sin(deathTimer * 5) * 50f;
             float fall   = 300f * deathTimer;
             player.setY(player.getY() + (bounce * (1 - deathTimer)) - (fall * delta));
@@ -150,11 +155,6 @@ public class GameScreen extends BaseScreen {
 
             if (deathTimer >= DEATH_DURATION) showGameOverScreen();
         }
-
-        // Score label
-        scoreBuilder.setLength(0);
-        scoreBuilder.append("Best: ").append(recordHeight).append("m");
-        scoreLabel.setText(scoreBuilder);
 
         stage.act(delta);
     }
@@ -191,23 +191,52 @@ public class GameScreen extends BaseScreen {
         }
 
         uiStage.act(delta);
-
         var batch = (com.badlogic.gdx.graphics.g2d.SpriteBatch) stage.getBatch();
 
-        // 1. Background — fixed to screen
+        // --- LAYER 1 & 2: BACKGROUND (UI Projection) ---
         batch.setProjectionMatrix(uiStage.getCamera().combined);
         batch.begin();
-        batch.draw(backgroundTexture, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+        // 1. SLOW STAR SCROLL
+        // A factor of 0.05f means it moves 6x slower than the railing.
+        float starFactor = 0.05f;
+        float starScrollV = (player.getY() * starFactor) / backgroundTexture.getHeight();
+
+        // Draw Stars with wrap/scroll
+        // (Ensure backgroundTexture.setWrap(Repeat, Repeat) is in your constructor!)
+        batch.draw(backgroundTexture,
+            0, 0,
+            SCREEN_WIDTH, SCREEN_HEIGHT,
+            0, starScrollV + 1, 1, starScrollV // Simple UV scroll
+        );
+
+        // 2. PARALLAX RAILING
+        float railFactor = 0.3f;
+        float stretchFactor = 2.0f;
+        float railScrollV = (player.getY() * railFactor) / railTexture.getHeight();
+
+        float v1 = railScrollV / stretchFactor;
+        float v2 = (railScrollV / stretchFactor) + (1.0f / stretchFactor);
+
+        batch.draw(railTexture,
+            0, 0,
+            SCREEN_WIDTH, SCREEN_HEIGHT,
+            0, v1,
+            1, v2
+        );
+
         batch.end();
 
-        // 2. Game world — follows camera
+        // --- LAYER 3: GAME WORLD (World Projection) ---
         batch.setProjectionMatrix(stage.getCamera().combined);
         batch.begin();
-        for (Platform p : world.getActivePlatforms()) platformTile.render(batch, p);
+        for (Platform p : world.getActivePlatforms()) {
+            platformTile.render(batch, p);
+        }
         sprite.draw(batch, player);
         batch.end();
 
-        // 3. UI — fixed to screen
+        // --- LAYER 4: UI ---
         uiStage.draw();
     }
 
@@ -299,7 +328,6 @@ public class GameScreen extends BaseScreen {
         uiStage.addActor(gameOverTable);
     }
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     @Override
     public void resize(int width, int height) {
