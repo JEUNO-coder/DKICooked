@@ -14,9 +14,77 @@ public class PlayerActor extends Actor {
     private static final float STEP = 1f / 180f;
     private boolean dead = false;
 
+    //for stats
+    private float jumpForce;      // How high they launch
+    private float gravityScale;   // How heavy they feel
+    private int maxJumps;         // Total jumps allowed (1 for most, 2 for Jerick)
+    private int remainingJumps;   // Current jumps available
+
+
     public PlayerActor(SoundPlayer soundPlayer) {
         this.physicsProcessor = new PlayerPhysicsProcessor(this, body, soundPlayer);
     }
+
+
+
+    public void initStats(String characterName) {
+        float baseGravity = -1800f;
+        float baseSpeed = 300f;
+
+        switch (characterName) {
+            case "Timothy":
+                this.jumpForce = 1000f;
+                this.gravityScale = 1.0f;
+                this.maxJumps = 1;
+                break;
+
+            case "Alaine":
+                this.jumpForce = 600f;
+                this.gravityScale = 0.5f;
+                this.maxJumps = 1;
+                break;
+
+            case "Jerick":
+                this.jumpForce = 800f;
+                this.gravityScale = 1.0f;
+                this.maxJumps = 2;
+                break;
+
+            default:
+                this.jumpForce = 600f;
+                this.gravityScale = 1.0f;
+                this.maxJumps = 1;
+                break;
+        }
+
+        this.remainingJumps = this.maxJumps;
+
+        body.setGravity(baseGravity * gravityScale);
+        body.setMaxSpeed(baseSpeed);
+    }
+
+    public void resetJumps() {
+        this.remainingJumps = this.maxJumps;
+    }
+
+    public void useJump() {
+        this.remainingJumps--;
+    }
+
+    public int getRemainingJumps() {
+        return this.remainingJumps;
+    }
+
+    public float getJumpForce() {
+        return this.jumpForce;
+    }
+
+    public int getMaxJumps() {
+        // If it's Timothy, allow a higher max charge
+        return this.maxJumps;
+    }
+
+
 
     @Override
     public void act(float delta) {

@@ -48,18 +48,33 @@ public class PlayerPhysicsProcessor {
     }
 
     private void handleJump(float dt, boolean space) {
+        if (isGrounded) {
+            player.resetJumps();
+        }
+
+        if (!isGrounded && !isCharging && Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
+            if (player.getMaxJumps() > 1 && player.getRemainingJumps() > 0) {
+                body.velocityY = 0;
+                body.velocityY = 650f;
+                player.useJump();
+                soundPlayer.playJump();
+            }
+        }
+
+
         if (isGrounded && space && jumpCooldown <= 0f && !isCharging) {
             isCharging = true;
             jumpCharge = 0f;
         }
         if (isCharging && space) {
-            jumpCharge = Math.min(maxJumpCharge, jumpCharge + (chargeRate * dt));
+            jumpCharge = Math.min(player.getJumpForce(), jumpCharge + (chargeRate * dt));
         }
         if (isCharging && !space) {
             body.velocityY = jumpCharge;
             isCharging = false;
             isGrounded = false;
             jumpCooldown = 0.15f;
+            player.useJump();
             soundPlayer.playJump();
         }
     }
@@ -129,6 +144,9 @@ public class PlayerPhysicsProcessor {
                         player.setY(surfaceY);
                         body.velocityY = 0;
                         groundedThisFrame = true;
+
+                        player.resetJumps();
+
                         break;
                     }
                     float bottomY = surfaceY - p.thickness;

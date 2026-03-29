@@ -8,11 +8,13 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.ScreenUtils;
 import io.github.DKICooked.screen.main.MainMenuScreen;
 
+
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class Main extends ApplicationAdapter {
     private SpriteBatch batch;
     private Texture image;
     private Screen currentScreen;
+
 
     @Override
     public void create() {

@@ -91,6 +91,9 @@ public class GameScreen extends BaseScreen {
         player.setSize(40, 60);
         player.setPosition(400, 150);
         player.setPlatforms(world.getActivePlatforms());
+
+        player.initStats(selection);
+
         stage.addActor(player);
         sprite = new PlayerSprite(selection);
 
