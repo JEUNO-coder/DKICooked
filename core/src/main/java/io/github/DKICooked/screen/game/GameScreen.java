@@ -50,6 +50,9 @@ public class GameScreen extends BaseScreen {
     private Texture whitePixel;
 
     private Texture asteroidTex;
+    private float preRaidTimer = 0;
+    private final float WARNING_DURATION = 3.0f;
+
     // Fonts — stored so they can be disposed
     private BitmapFont scoreFont;
     private BitmapFont gameOverFont;
@@ -59,6 +62,8 @@ public class GameScreen extends BaseScreen {
     private final StringBuilder scoreBuilder = new StringBuilder();
 
     private final Stage uiStage;
+    private float backgroundTintAlpha = 0f; // 0 = Normal, 1 = Full Red
+    private final float FADE_SPEED = 1.5f;   // Higher = faster fade
 
     private int highestChunkReached = 0;
     private int lastSnapChunk = -1;       // tracks which chunk we last snapped to
@@ -67,6 +72,8 @@ public class GameScreen extends BaseScreen {
     private PausedScreen pauseOverlay;
 
     private final AsteroidManager asteroidManager;
+    private Texture anomalyTex;
+    private float anomalyTimer = 0;
 
     private int recordHeight = 0;
 
@@ -74,7 +81,7 @@ public class GameScreen extends BaseScreen {
         this.main = main;
         this.selection = selection;
         playerFallenTexture  = new Texture(Gdx.files.internal("dead.png"));
-
+        anomalyTex = new Texture(Gdx.files.internal("emer.png"));
         soundPlayer = new SoundPlayer();
         soundPlayer.playMusic();
 
@@ -188,56 +195,54 @@ public class GameScreen extends BaseScreen {
     }
 
     // ── Render ────────────────────────────────────────────────────────────────
-
     @Override
     public void render(float delta) {
         ScreenUtils.clear(0.05f, 0.05f, 0.08f, 1f);
 
+        // --- 1. LOGIC UPDATES ---
         if (!paused && currentState == State.PLAYING) {
             updateLogic(delta);
-            asteroidManager.update(delta, player.getY(), stage); // Move it here!
-        } else if (currentState == State.DYING) {
-            updateLogic(delta);
+
+            boolean isAnomalyZone = player.getY() >= 1500 && player.getY() <= 2000;
+
+            if (isAnomalyZone) {
+                // Fade the tint IN
+                backgroundTintAlpha += delta * FADE_SPEED;
+                if (backgroundTintAlpha > 1f) backgroundTintAlpha = 1f;
+
+                if (preRaidTimer < 3.0f) {
+                    preRaidTimer += delta;
+                } else {
+                    asteroidManager.update(delta, player.getY(), stage);
+                }
+            } else {
+                // Fade the tint OUT
+                backgroundTintAlpha -= delta * FADE_SPEED;
+                if (backgroundTintAlpha < 0f) backgroundTintAlpha = 0f;
+                preRaidTimer = 0;
+            }
         }
 
         uiStage.act(delta);
         var batch = (com.badlogic.gdx.graphics.g2d.SpriteBatch) stage.getBatch();
 
-        // --- LAYER 1 & 2: BACKGROUND (UI Projection) ---
+        // --- 2. LAYER 1 & 2: BACKGROUND (Stars & Rails) ---
         batch.setProjectionMatrix(uiStage.getCamera().combined);
         batch.begin();
 
-        // 1. SLOW STAR SCROLL
-        // A factor of 0.05f means it moves 6x slower than the railing.
-        float starFactor = 0.05f;
-        float starScrollV = (player.getY() * starFactor) / backgroundTexture.getHeight();
+        float currentGreenBlue = 1f - (backgroundTintAlpha * 0.7f);
+        batch.setColor(1f, currentGreenBlue, currentGreenBlue, 1f);
 
-        // Draw Stars with wrap/scroll
-        // (Ensure backgroundTexture.setWrap(Repeat, Repeat) is in your constructor!)
-        batch.draw(backgroundTexture,
-            0, 0,
-            SCREEN_WIDTH, SCREEN_HEIGHT,
-            0, starScrollV + 1, 1, starScrollV // Simple UV scroll
-        );
+        float starScrollV = (player.getY() * 0.05f) / backgroundTexture.getHeight();
+        batch.draw(backgroundTexture, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0, starScrollV + 1, 1, starScrollV);
 
-        // 2. PARALLAX RAILING
-        float railFactor = 0.3f;
-        float stretchFactor = 2.0f;
-        float railScrollV = (player.getY() * railFactor) / railTexture.getHeight();
+        float railScrollV = (player.getY() * 0.3f) / railTexture.getHeight();
+        batch.draw(railTexture, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0, (railScrollV / 2f), 1, (railScrollV / 2f) + 0.5f);
 
-        float v1 = railScrollV / stretchFactor;
-        float v2 = (railScrollV / stretchFactor) + (1.0f / stretchFactor);
-
-        batch.draw(railTexture,
-            0, 0,
-            SCREEN_WIDTH, SCREEN_HEIGHT,
-            0, v1,
-            1, v2
-        );
-
+        batch.setColor(Color.WHITE); // Reset
         batch.end();
 
-        // --- LAYER 3: GAME WORLD (World Projection) ---
+        // --- 3. LAYER 3: GAME WORLD (Platforms & Player) ---
         batch.setProjectionMatrix(stage.getCamera().combined);
         batch.begin();
         for (Platform p : world.getActivePlatforms()) {
@@ -246,9 +251,33 @@ public class GameScreen extends BaseScreen {
         sprite.draw(batch, player);
         batch.end();
 
+        // This draws the Asteroids (Actors) added to the stage
         stage.draw();
-        // --- LAYER 4: UI ---
+
+        // --- 4. LAYER 4: UI (Score & Pause) ---
         uiStage.draw();
+
+        // --- 5. LAYER 5: ANOMALY OVERLAY ("EMER" Sign) ---
+        if (backgroundTintAlpha > 0) { // Show if even slightly tinted
+            anomalyTimer += delta;
+            batch.setProjectionMatrix(uiStage.getCamera().combined);
+            batch.begin();
+
+            if (!com.badlogic.gdx.math.MathUtils.randomBoolean(0.03f)) {
+                float shakeX = com.badlogic.gdx.math.MathUtils.random(-2f, 2f);
+                float shakeY = com.badlogic.gdx.math.MathUtils.random(-1f, 1f);
+
+                // Pulse speed
+                float pulse = 0.6f + (float) Math.sin(anomalyTimer * 6f) * 0.4f;
+
+                // Multiply pulse by the global background fade so it fades in too!
+                batch.setColor(1, 1, 1, pulse * backgroundTintAlpha);
+
+                batch.draw(anomalyTex, (SCREEN_WIDTH / 2f) - 285f + shakeX, 420 + shakeY, 570f, 85f);
+                batch.setColor(Color.WHITE);
+            }
+            batch.end();
+        }
     }
 
     // ── UI setup ──────────────────────────────────────────────────────────────
@@ -360,5 +389,6 @@ public class GameScreen extends BaseScreen {
         if (retryTex            != null) retryTex.dispose();
         if (whitePixel          != null) whitePixel.dispose();
         if (asteroidTex != null) asteroidTex.dispose();
+        if (anomalyTex != null) anomalyTex.dispose();
     }
 }
