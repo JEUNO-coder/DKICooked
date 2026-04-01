@@ -1,5 +1,6 @@
 package io.github.DKICooked.entities;
 
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.utils.Array;
 import io.github.DKICooked.audio.SoundPlayer;
@@ -13,6 +14,7 @@ public class PlayerActor extends Actor {
     private float accumulator = 0f;
     private static final float STEP = 1f / 180f;
     private boolean dead = false;
+    private Rectangle collisionRect = new Rectangle();
 
     //for stats
     private float jumpForce;      // How high they launch
@@ -24,8 +26,6 @@ public class PlayerActor extends Actor {
     public PlayerActor(SoundPlayer soundPlayer) {
         this.physicsProcessor = new PlayerPhysicsProcessor(this, body, soundPlayer);
     }
-
-
 
     public void initStats(String characterName) {
         float baseGravity = -1800f;
@@ -84,7 +84,10 @@ public class PlayerActor extends Actor {
         return this.maxJumps;
     }
 
-
+    public Rectangle getCollisionRect() {
+        collisionRect.set(getX() + 5, getY() + 5, getWidth() - 10, getHeight() - 10);
+        return collisionRect;
+    }
 
     @Override
     public void act(float delta) {

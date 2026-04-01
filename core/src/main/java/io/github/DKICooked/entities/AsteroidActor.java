@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.Circle;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 
@@ -12,6 +13,7 @@ public class AsteroidActor extends Actor {
     private TextureRegion region;
     private final float fallSpeedY;
     private final float fallSpeedX;
+    private Circle collisionCircle = new Circle();
 
     public AsteroidActor(Texture texture, float startX, float startY) {
         this.region = new TextureRegion(texture);
@@ -23,6 +25,16 @@ public class AsteroidActor extends Actor {
         this.fallSpeedY = 300f + (float)Math.random() * 200f;
 
         this.fallSpeedX = -150f - MathUtils.random(100f);
+    }
+
+    public Circle getCollisionCircle() {
+        // Center the circle on the asteroid and set radius to about 80% of width
+        collisionCircle.set(
+            getX() + getWidth() / 2f,
+            getY() + getHeight() / 2f,
+            getWidth() * 0.4f
+        );
+        return collisionCircle;
     }
 
     @Override

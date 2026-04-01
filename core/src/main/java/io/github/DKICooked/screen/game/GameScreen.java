@@ -170,6 +170,12 @@ public class GameScreen extends BaseScreen {
             if (deathTimer >= DEATH_DURATION) showGameOverScreen();
         }
 
+        if (currentState == State.PLAYING) {
+            if (asteroidManager.isRaidActive()) {
+                checkAsteroidCollisions();
+            }
+        }
+
         stage.act(delta);
     }
 
@@ -192,6 +198,25 @@ public class GameScreen extends BaseScreen {
         OrthographicCamera cam = (OrthographicCamera) stage.getCamera();
         cam.position.set(SCREEN_WIDTH / 2f, newY + SCREEN_HEIGHT / 2f, 0);
         cam.update();
+    }
+
+    private void checkAsteroidCollisions() {
+        if (currentState != State.PLAYING) return;
+
+        // Iterate through all actors on the stage
+        for (com.badlogic.gdx.scenes.scene2d.Actor actor : stage.getActors()) {
+            if (actor instanceof AsteroidActor) {
+                AsteroidActor meteor = (AsteroidActor) actor;
+
+                // Use Intersector to check Circle vs Rectangle
+                if (com.badlogic.gdx.math.Intersector.overlaps(meteor.getCollisionCircle(), player.getCollisionRect())) {
+                    System.out.println("CRITICAL HIT: Anomaly impact!");
+                    startDeathSequence();
+                    showGameOverScreen();
+                    break; // Stop checking to prevent multiple death triggers
+                }
+            }
+        }
     }
 
     // ── Render ────────────────────────────────────────────────────────────────
