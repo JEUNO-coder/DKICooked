@@ -24,6 +24,8 @@ public class PhysicsBody {
     public float getGravity() { return gravity; }
 
     public void applyHorizontalInput(float input, float delta) {
+
+
         if (input != 0) {
             velocityX += input * accel * delta;
         } else {

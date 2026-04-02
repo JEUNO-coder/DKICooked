@@ -50,11 +50,13 @@ public class GameScreen extends BaseScreen {
     private Texture retryTex;
     private Texture whitePixel;
 
+    private Color tint;
+
     private Texture asteroidTex;
     private float preRaidTimer = 0;
     private final float WARNING_DURATION = 3.0f;
 
-    private enum RaidType { NONE, ASTEROIDS, UFO }
+    private enum RaidType { NONE, ASTEROIDS, UFO, MAGNETIC_STORM }
     private RaidType activeRaid = RaidType.NONE;
 
     private float raidEndHeight = 0;
@@ -63,7 +65,9 @@ public class GameScreen extends BaseScreen {
     private float ufoSpawnTimer = 0f;
     private final float UFO_SPAWN_INTERVAL = 4.0f;
     private Animation<TextureRegion> ufoHorizontalAnim;
+
     private final UfoManager ufoManager;
+    private final MagneticStormManager msManger;
 
     // Fonts — stored so they can be disposed
     private BitmapFont scoreFont;
@@ -88,6 +92,7 @@ public class GameScreen extends BaseScreen {
     private float anomalyTimer = 0;
 
     private int recordHeight = 0;
+    private RaidType lastActiveRaid = RaidType.NONE;
 
     public GameScreen(Main main, String selection) {
         this.main = main;
@@ -138,6 +143,8 @@ public class GameScreen extends BaseScreen {
 
         this.ufoManager = new UfoManager(ufoHorizontalAnim);
 
+        this.msManger = new MagneticStormManager();
+
         // Input — UI gets first dibs
         InputMultiplexer multiplexer = new InputMultiplexer();
         multiplexer.addProcessor(uiStage);
@@ -181,6 +188,20 @@ public class GameScreen extends BaseScreen {
                 startDeathSequence();
             }
 
+            float moveDir = 0;
+            if (Gdx.input.isKeyPressed(Input.Keys.A))  moveDir = -1;
+            if (Gdx.input.isKeyPressed(Input.Keys.D)) moveDir = 1;
+
+            if (activeRaid == RaidType.MAGNETIC_STORM) {
+                moveDir *= -1;
+                tint = msManger.getStormTint(backgroundTintAlpha);
+                 // -1 becomes 1, 1 becomes -1
+            } else {
+                tint = null;
+            }
+
+            player.handleHorizontalMovement(moveDir, delta);
+
             // Calculate and update score text
             int currentHeight = (int) (player.getY() / 100f);
             if (currentHeight > recordHeight) recordHeight = currentHeight;
@@ -206,6 +227,8 @@ public class GameScreen extends BaseScreen {
 
     private void startDeathSequence() {
         currentState = State.DYING;
+        activeRaid = RaidType.NONE; // Stop logic
+        backgroundTintAlpha = 0;    // Instant visual clear
         player.setDead(true);
         player.clearActions();
         player.setOrigin(player.getWidth() / 2f, player.getHeight() / 2f);
@@ -252,14 +275,14 @@ public class GameScreen extends BaseScreen {
     // ── Render ────────────────────────────────────────────────────────────────
     @Override
     public void render(float delta) {
+        // Clear screen to a dark space color
         ScreenUtils.clear(0.05f, 0.05f, 0.08f, 1f);
 
         // --- 1. LOGIC UPDATES ---
         if (!paused && (currentState == State.PLAYING || currentState == State.DYING)) {
             updateLogic(delta);
-
             if (currentState == State.PLAYING) {
-                handleAnomalyLogic(delta); // Move your if(isAnomalyZone) logic here for cleanliness
+                handleAnomalyLogic(delta);
             }
         }
 
@@ -270,35 +293,71 @@ public class GameScreen extends BaseScreen {
         batch.setProjectionMatrix(uiStage.getCamera().combined);
         batch.begin();
 
-        float currentGreenBlue = 1f - (backgroundTintAlpha * 0.7f);
-        batch.setColor(1f, currentGreenBlue, currentGreenBlue, 1f);
+        // Determine if we should be Blue/Cyan (Magnetic Storm) or Red (Asteroids/UFO)
+        boolean isEffectivelyMagnetic = (activeRaid == RaidType.MAGNETIC_STORM) ||
+            (activeRaid == RaidType.NONE && lastActiveRaid == RaidType.MAGNETIC_STORM);
 
+        if (isEffectivelyMagnetic && backgroundTintAlpha > 0) {
+            // Apply the Blue/Cyan tint from the MagneticStormManager
+            batch.setColor(msManger.getStormTint(backgroundTintAlpha));
+        } else {
+            // Default: Apply the Red tint for other raids or warnings
+            float currentGreenBlue = 1f - (backgroundTintAlpha * 0.7f);
+            batch.setColor(1f, currentGreenBlue, currentGreenBlue, 1f);
+        }
+
+        // Draw scrolling background textures
         float starScrollV = (player.getY() * 0.05f) / backgroundTexture.getHeight();
         batch.draw(backgroundTexture, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0, starScrollV + 1, 1, starScrollV);
 
         float railScrollV = (player.getY() * 0.3f) / railTexture.getHeight();
         batch.draw(railTexture, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0, (railScrollV / 2f), 1, (railScrollV / 2f) + 0.5f);
 
-        batch.setColor(Color.WHITE); // Reset
+        batch.setColor(Color.WHITE); // Reset color
         batch.end();
 
         // --- 3. LAYER 3: GAME WORLD (Platforms & Player) ---
         batch.setProjectionMatrix(stage.getCamera().combined);
         batch.begin();
+
         for (Platform p : world.getActivePlatforms()) {
             platformTile.render(batch, p);
         }
+
+        // Add a tiny visual jitter to the player during the storm for "glitch" feel
+        float jitterX = 0;
+        if (activeRaid == RaidType.MAGNETIC_STORM) {
+            jitterX = com.badlogic.gdx.math.MathUtils.random(-1.5f, 1.5f);
+            player.moveBy(jitterX, 0);
+        }
+
         sprite.draw(batch, player);
+
+        // Reset player position immediately so physics/collisions aren't affected
+        if (activeRaid == RaidType.MAGNETIC_STORM) {
+            player.moveBy(-jitterX, 0);
+        }
         batch.end();
 
-        // This draws the Asteroids (Actors) added to the stage
+        // Draw Stage Actors (Asteroids, UFOs, etc.)
         stage.draw();
 
-        // --- 4. LAYER 4: UI (Score & Pause) ---
+        // --- 4. LAYER 4: MAGNETIC GLITCH OVERLAY ---
+        // We draw this on top of the world but BEFORE the UI
+        if (isEffectivelyMagnetic && backgroundTintAlpha > 0) {
+            // Set projection to UI camera so glitch bars stay relative to screen
+            batch.setProjectionMatrix(uiStage.getCamera().combined);
+
+            batch.begin(); // <--- ADD THIS LINE TO START THE BATCH
+            msManger.drawGlitch(batch, backgroundTintAlpha);
+            batch.end();   // <--- ADD THIS LINE TO FINISH THE BATCH
+        }
+
+        // --- 5. LAYER 5: UI (Score & Pause) ---
         uiStage.draw();
 
-        // --- 5. LAYER 5: ANOMALY OVERLAY ("EMER" Sign) ---
-        if (backgroundTintAlpha > 0) { // Show if even slightly tinted
+        // --- 6. LAYER 6: ANOMALY "EMER" OVERLAY ---
+        if (backgroundTintAlpha > 0) {
             anomalyTimer += delta;
             batch.setProjectionMatrix(uiStage.getCamera().combined);
             batch.begin();
@@ -306,31 +365,13 @@ public class GameScreen extends BaseScreen {
             if (!com.badlogic.gdx.math.MathUtils.randomBoolean(0.03f)) {
                 float shakeX = com.badlogic.gdx.math.MathUtils.random(-2f, 2f);
                 float shakeY = com.badlogic.gdx.math.MathUtils.random(-1f, 1f);
-
-                // Pulse speed
                 float pulse = 0.6f + (float) Math.sin(anomalyTimer * 6f) * 0.4f;
 
-                // Multiply pulse by the global background fade so it fades in too!
                 batch.setColor(1, 1, 1, pulse * backgroundTintAlpha);
-
                 batch.draw(anomalyTex, (SCREEN_WIDTH / 2f) - 285f + shakeX, 420 + shakeY, 570f, 85f);
                 batch.setColor(Color.WHITE);
             }
             batch.end();
-        }
-    }
-
-    private void handleAsteroidRaid(float delta) {
-        // 1. Visuals: Fade the tint IN
-        backgroundTintAlpha += delta * FADE_SPEED;
-        if (backgroundTintAlpha > 1f) backgroundTintAlpha = 1f;
-
-        // 2. Initial Warning Delay
-        if (preRaidTimer < 2.0f) {
-            preRaidTimer += delta;
-        } else {
-            // 3. Use your existing Manager to spawn asteroids
-            asteroidManager.update(delta, player.getY(), stage);
         }
     }
 
@@ -339,14 +380,14 @@ public class GameScreen extends BaseScreen {
 
         // 1. START TRIGGER: If we are above 15m and no raid is currently happening
         if (py >= 1500 && activeRaid == RaidType.NONE) {
+            // Randomly pick between 3 now
+            int choice = com.badlogic.gdx.math.MathUtils.random(1, 3);
+            if (choice == 1) activeRaid = RaidType.ASTEROIDS;
+            else if (choice == 2) activeRaid = RaidType.UFO;
+            else activeRaid = RaidType.MAGNETIC_STORM;
 
-            // Pick which one you want to show first (or randomize just the type)
-            activeRaid = com.badlogic.gdx.math.MathUtils.randomBoolean() ? RaidType.ASTEROIDS : RaidType.UFO;
-
-            // Set how long this static raid lasts (e.g., 2000 pixels)
             raidEndHeight = py + 2000f;
-
-            System.out.println("STATIC RAID START: " + activeRaid);
+            System.out.println("Current Raid: " + activeRaid);
         }
 
         // 2. EXECUTION: Keep the raid running while active
@@ -354,28 +395,30 @@ public class GameScreen extends BaseScreen {
             backgroundTintAlpha += delta * FADE_SPEED;
             if (backgroundTintAlpha > 1f) backgroundTintAlpha = 1f;
 
-            if (activeRaid == RaidType.ASTEROIDS) {
-                asteroidManager.update(delta, py, stage);
-            } else if (activeRaid == RaidType.UFO) {
-                ufoManager.update(delta, stage);
-            }
+            if (activeRaid == RaidType.ASTEROIDS) asteroidManager.update(delta, py, stage);
+            else if (activeRaid == RaidType.UFO) ufoManager.update(delta, stage);
+            else if (activeRaid == RaidType.MAGNETIC_STORM) msManger.update(delta, stage);
 
             // 3. TERMINATION: End the raid once the player has climbed the duration
-            if (py >= raidEndHeight) {
+            if (py >= raidEndHeight || py < 1500) {
                 stopAllRaids();
                 System.out.println("Raid Cycle Complete.");
             }
         } else {
             // Smoothly fade out the red tint when between raids
             backgroundTintAlpha -= delta * FADE_SPEED;
-            if (backgroundTintAlpha < 0f) backgroundTintAlpha = 0f;
+            if (backgroundTintAlpha <= 0f) {
+                backgroundTintAlpha = 0f;
+                lastActiveRaid = RaidType.NONE; // CRITICAL: Reset memory once fade is done
+            }
         }
     }
 
     private void stopAllRaids() {
+        lastActiveRaid = activeRaid;
         activeRaid = RaidType.NONE;
         ufoManager.stop();
-        // asteroidManager.stop(); // If yours has a stop/reset method
+        msManger.stop(stage);
     }
     // ── UI setup ──────────────────────────────────────────────────────────────
 
@@ -487,5 +530,6 @@ public class GameScreen extends BaseScreen {
         if (whitePixel          != null) whitePixel.dispose();
         if (asteroidTex != null) asteroidTex.dispose();
         if (anomalyTex != null) anomalyTex.dispose();
+        if (msManger != null) msManger.dispose();
     }
 }

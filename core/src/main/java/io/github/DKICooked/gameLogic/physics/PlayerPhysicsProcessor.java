@@ -28,7 +28,7 @@ public class PlayerPhysicsProcessor {
         this.soundPlayer = soundPlayer;
     }
 
-    public void update(float dt, Array<Platform> platforms) {
+    public void update(float dt, Array<Platform> platforms, float horizontalInput) {
         float oldX = player.getX();
         float oldY = player.getY();
         float oldHeadY = oldY + player.getHeight();
@@ -39,7 +39,7 @@ public class PlayerPhysicsProcessor {
 
         handleJump(dt, space);
 
-        handleHorizontal(dt, oldX, platforms);
+        handleHorizontal(dt, oldX, platforms, horizontalInput);
 
         handleVertical(dt, oldY, oldHeadY, platforms);
 
@@ -79,12 +79,12 @@ public class PlayerPhysicsProcessor {
         }
     }
 
-    private void handleHorizontal(float dt, float oldX, Array<Platform> platforms) {
-        float input = 0f;
-        if (!isCharging && stunTime <= 0f) {
-            if (Gdx.input.isKeyPressed(Input.Keys.A)) input -= 1f;
-            if (Gdx.input.isKeyPressed(Input.Keys.D)) input += 1f;
+    private void handleHorizontal(float dt, float oldX, Array<Platform> platforms, float input) {
+
+        if (isCharging || stunTime > 0f) {
+            input = 0f; // Force input to 0 before applying it
         }
+
         body.applyHorizontalInput(input, dt);
         player.moveBy(body.velocityX * dt, 0);
 
@@ -94,6 +94,7 @@ public class PlayerPhysicsProcessor {
             stunTime = 0.25f;
             player.setX(MathUtils.clamp(player.getX(), 0, 800 - player.getWidth()));
         }
+
 
 // Wall Collision
 

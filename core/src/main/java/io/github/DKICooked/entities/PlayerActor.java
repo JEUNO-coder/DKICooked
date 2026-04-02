@@ -15,6 +15,7 @@ public class PlayerActor extends Actor {
     private static final float STEP = 1f / 180f;
     private boolean dead = false;
     private Rectangle collisionRect = new Rectangle();
+    private float currentMoveDirection = 0;
 
     //for stats
     private float jumpForce;      // How high they launch
@@ -25,6 +26,10 @@ public class PlayerActor extends Actor {
 
     public PlayerActor(SoundPlayer soundPlayer) {
         this.physicsProcessor = new PlayerPhysicsProcessor(this, body, soundPlayer);
+    }
+
+    public void handleHorizontalMovement(float direction, float delta) {
+        this.currentMoveDirection = direction;
     }
 
     public void initStats(String characterName) {
@@ -94,7 +99,7 @@ public class PlayerActor extends Actor {
         super.act(delta);
         accumulator += delta;
         while (accumulator >= STEP) {
-            physicsProcessor.update(STEP, platforms);
+            physicsProcessor.update(STEP, platforms, currentMoveDirection);
             accumulator -= STEP;
         }
     }
