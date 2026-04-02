@@ -6,6 +6,7 @@ import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
@@ -52,6 +53,17 @@ public class GameScreen extends BaseScreen {
     private Texture asteroidTex;
     private float preRaidTimer = 0;
     private final float WARNING_DURATION = 3.0f;
+
+    private enum RaidType { NONE, ASTEROIDS, UFO }
+    private RaidType activeRaid = RaidType.NONE;
+
+    private float raidEndHeight = 0;
+    private int lastCheckedChunk = -1;
+
+    private float ufoSpawnTimer = 0f;
+    private final float UFO_SPAWN_INTERVAL = 4.0f;
+    private Animation<TextureRegion> ufoHorizontalAnim;
+    private final UfoManager ufoManager;
 
     // Fonts — stored so they can be disposed
     private BitmapFont scoreFont;
@@ -113,6 +125,19 @@ public class GameScreen extends BaseScreen {
         backgroundTexture.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
         railTexture.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
 
+        Texture f1 = new Texture(Gdx.files.internal("ufoH1.png"));
+        Texture f2 = new Texture(Gdx.files.internal("ufoH2.png"));
+
+        TextureRegion[] frames = {
+            new TextureRegion(f1),
+            new TextureRegion(f2),
+        };
+
+        ufoHorizontalAnim = new Animation<>(0.3f, frames);
+        ufoHorizontalAnim.setPlayMode(Animation.PlayMode.LOOP);
+
+        this.ufoManager = new UfoManager(ufoHorizontalAnim);
+
         // Input — UI gets first dibs
         InputMultiplexer multiplexer = new InputMultiplexer();
         multiplexer.addProcessor(uiStage);
@@ -148,8 +173,8 @@ public class GameScreen extends BaseScreen {
                 lastSnapChunk = currentChunk;
             }
 
-            if (asteroidManager.isRaidActive()) {
-                checkAsteroidCollisions();
+            if (activeRaid != RaidType.NONE) {
+                checkCollisions(); // This checks both classes, but only the active ones will be on stage
             }
 
             if (highestChunkReached > 0 && currentChunk < highestChunkReached - 1) {
@@ -200,7 +225,7 @@ public class GameScreen extends BaseScreen {
         cam.update();
     }
 
-    private void checkAsteroidCollisions() {
+    private void checkCollisions() {
         if (currentState != State.PLAYING) return;
 
         for (com.badlogic.gdx.scenes.scene2d.Actor actor : stage.getActors()) {
@@ -209,6 +234,14 @@ public class GameScreen extends BaseScreen {
 
                 if (com.badlogic.gdx.math.Intersector.overlaps(meteor.getCollisionCircle(), player.getCollisionRect())) {
                     // Trigger the sequence, but let updateLogic handle the timer
+                    startDeathSequence();
+                    break;
+                }
+            }
+
+            if (actor instanceof UfoActor) {
+                UfoActor ufo = (UfoActor) actor;
+                if (com.badlogic.gdx.math.Intersector.overlaps(ufo.getCollisionCircle(), player.getCollisionRect())) {
                     startDeathSequence();
                     break;
                 }
@@ -224,8 +257,6 @@ public class GameScreen extends BaseScreen {
         // --- 1. LOGIC UPDATES ---
         if (!paused && (currentState == State.PLAYING || currentState == State.DYING)) {
             updateLogic(delta);
-
-            boolean isAnomalyZone = player.getY() >= 1500 && player.getY() <= 3000;
 
             if (currentState == State.PLAYING) {
                 handleAnomalyLogic(delta); // Move your if(isAnomalyZone) logic here for cleanliness
@@ -289,25 +320,62 @@ public class GameScreen extends BaseScreen {
         }
     }
 
-    private void handleAnomalyLogic(float delta) {
-        boolean isAnomalyZone = player.getY() >= 1500 && player.getY() <= 3000;
+    private void handleAsteroidRaid(float delta) {
+        // 1. Visuals: Fade the tint IN
+        backgroundTintAlpha += delta * FADE_SPEED;
+        if (backgroundTintAlpha > 1f) backgroundTintAlpha = 1f;
 
-        if (isAnomalyZone) {
-            // Fade the tint IN
+        // 2. Initial Warning Delay
+        if (preRaidTimer < 2.0f) {
+            preRaidTimer += delta;
+        } else {
+            // 3. Use your existing Manager to spawn asteroids
+            asteroidManager.update(delta, player.getY(), stage);
+        }
+    }
+
+    private void handleAnomalyLogic(float delta) {
+        float py = player.getY();
+
+        // 1. START TRIGGER: If we are above 15m and no raid is currently happening
+        if (py >= 1500 && activeRaid == RaidType.NONE) {
+
+            // Pick which one you want to show first (or randomize just the type)
+            activeRaid = com.badlogic.gdx.math.MathUtils.randomBoolean() ? RaidType.ASTEROIDS : RaidType.UFO;
+
+            // Set how long this static raid lasts (e.g., 2000 pixels)
+            raidEndHeight = py + 2000f;
+
+            System.out.println("STATIC RAID START: " + activeRaid);
+        }
+
+        // 2. EXECUTION: Keep the raid running while active
+        if (activeRaid != RaidType.NONE) {
             backgroundTintAlpha += delta * FADE_SPEED;
             if (backgroundTintAlpha > 1f) backgroundTintAlpha = 1f;
 
-            if (preRaidTimer < 2.0f) {
-                preRaidTimer += delta;
-            } else {
-                asteroidManager.update(delta, player.getY(), stage);
+            if (activeRaid == RaidType.ASTEROIDS) {
+                asteroidManager.update(delta, py, stage);
+            } else if (activeRaid == RaidType.UFO) {
+                ufoManager.update(delta, stage);
+            }
+
+            // 3. TERMINATION: End the raid once the player has climbed the duration
+            if (py >= raidEndHeight) {
+                stopAllRaids();
+                System.out.println("Raid Cycle Complete.");
             }
         } else {
-            // Fade the tint OUT
+            // Smoothly fade out the red tint when between raids
             backgroundTintAlpha -= delta * FADE_SPEED;
             if (backgroundTintAlpha < 0f) backgroundTintAlpha = 0f;
-            preRaidTimer = 0;
         }
+    }
+
+    private void stopAllRaids() {
+        activeRaid = RaidType.NONE;
+        ufoManager.stop();
+        // asteroidManager.stop(); // If yours has a stop/reset method
     }
     // ── UI setup ──────────────────────────────────────────────────────────────
 
