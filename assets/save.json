@@ -1,44 +1,44 @@
 {
 "leaderBoard": [
 	{
+		"name": "JER",
+		"score": 98
+	},
+	{
 		"name": "213",
 		"score": 90
+	},
+	{
+		"name": "AAA",
+		"score": 73
 	},
 	{
 		"name": "JER",
 		"score": 54
 	},
 	{
+		"name": "AAA",
+		"score": 53
+	},
+	{
 		"name": "125",
 		"score": 31
 	},
 	{
-		"name": "WER",
-		"score": 28
+		"name": "B<B",
+		"score": 31
 	},
 	{
-		"name": "123",
-		"score": 28
+		"name": "AAA",
+		"score": 30
 	},
 	{
-		"name": "WER",
-		"score": 25
+		"name": "AAA",
+		"score": 30
 	},
 	{
-		"name": "WRA",
-		"score": 19
-	},
-	{
-		"name": "JER",
-		"score": 17
-	},
-	{
-		"name": "WQD",
-		"score": 16
-	},
-	{
-		"name": "13A",
-		"score": 16
+		"name": "AAA",
+		"score": 29
 	}
 ]
 }

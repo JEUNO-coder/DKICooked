@@ -420,7 +420,14 @@ public class GameScreen extends BaseScreen {
             (activeRaid == RaidType.NONE && lastActiveRaid == RaidType.MAGNETIC_STORM);
 
         if (isEffectivelyMagnetic && backgroundTintAlpha > 0) {
-            batch.setColor(msManger.getStormTint(backgroundTintAlpha));
+            Color stormColor = msManger.getStormTint(backgroundTintAlpha);
+            // Linear interpolation between white (1,1,1) and storm color based on alpha
+            batch.setColor(
+                1f - (1f - stormColor.r) * backgroundTintAlpha,
+                1f - (1f - stormColor.g) * backgroundTintAlpha,
+                1f - (1f - stormColor.b) * backgroundTintAlpha,
+                1f
+            );
         } else {
             float currentGreenBlue = 1f - (backgroundTintAlpha * 0.7f);
             batch.setColor(1f, currentGreenBlue, currentGreenBlue, 1f);
@@ -434,7 +441,7 @@ public class GameScreen extends BaseScreen {
 
         batch.setColor(Color.WHITE);
         batch.end();
-
+       // stage.setDebugAll(true);
         // 5. Game World Rendering (Platforms and Player)
         batch.setProjectionMatrix(stage.getCamera().combined);
         batch.begin();
@@ -484,11 +491,13 @@ public class GameScreen extends BaseScreen {
         stage.draw();
 
         // 6. Effects (Magnetic Glitch)
-        if (isEffectivelyMagnetic && backgroundTintAlpha > 0) {
-            batch.setProjectionMatrix(uiStage.getCamera().combined);
-            batch.begin();
-            msManger.drawGlitch(batch, backgroundTintAlpha);
-            batch.end();
+        if (backgroundTintAlpha > 0) {
+            // We check if the raid IS or WAS a magnetic storm
+            if (activeRaid == RaidType.MAGNETIC_STORM || lastActiveRaid == RaidType.MAGNETIC_STORM) {
+                batch.setProjectionMatrix(uiStage.getCamera().combined);
+                // Note: Batch begin/end is handled inside msManger.drawGlitch
+                msManger.drawGlitch(batch, backgroundTintAlpha);
+            }
         }
 
         // 7. Anomaly Text Pulse
@@ -537,7 +546,7 @@ public class GameScreen extends BaseScreen {
             }
         } else {
             // 3. Fading out the effects after a raid ends
-            backgroundTintAlpha -= delta * FADE_SPEED;
+            backgroundTintAlpha -= delta * FADE_SPEED; // Gradually goes from 1 to 0
             if (backgroundTintAlpha <= 0f) {
                 backgroundTintAlpha = 0f;
                 lastActiveRaid = RaidType.NONE;
