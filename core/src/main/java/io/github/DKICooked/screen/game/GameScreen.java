@@ -589,9 +589,6 @@ public class GameScreen extends BaseScreen {
         scoreTable.add(scoreLabel);
         uiStage.addActor(scoreTable);
 
-        Texture settingsTex = new Texture(Gdx.files.internal("settings.png")); // Ensure you have this asset
-        ImageButton settingsButton = new ImageButton(new TextureRegionDrawable(new TextureRegion(settingsTex)));
-
         Texture pauseTex = new Texture(Gdx.files.internal("Pause.png"));
         ImageButton pauseButton = new ImageButton(new TextureRegionDrawable(new TextureRegion(pauseTex)));
         Table uiTable = new Table();
@@ -599,7 +596,6 @@ public class GameScreen extends BaseScreen {
         uiTable.top().right();
         uiTable.add(pauseButton).size(40, 40).pad(10);
         uiStage.addActor(uiTable);
-        uiTable.add(settingsButton).size(40, 40).pad(10);
 
         pauseOverlay = new PausedScreen(
             () -> { // Resume function
@@ -614,14 +610,6 @@ public class GameScreen extends BaseScreen {
             main
         );
         uiStage.addActor(pauseOverlay);
-
-        settingsButton.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                soundPlayer.stopMusic(); // Optional: stop music before switching
-                main.setScreen(new SettingsScreen(main));
-            }
-        });
 
         pauseButton.addListener(new ClickListener() {
             @Override public void clicked(InputEvent event, float x, float y) { paused = !paused; pauseOverlay.toggle(paused); }
