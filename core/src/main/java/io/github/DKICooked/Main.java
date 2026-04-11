@@ -6,7 +6,9 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.ScreenUtils;
+import io.github.DKICooked.screen.main.IntroScreen;
 import io.github.DKICooked.screen.main.MainMenuScreen;
+import io.github.DKICooked.screen.main.SplashScreen;
 
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
@@ -20,7 +22,7 @@ public class Main extends ApplicationAdapter {
     public void create() {
         batch = new SpriteBatch();
 
-        setScreen(new MainMenuScreen(this));
+        setScreen(new IntroScreen(this));
     }
 
     @Override
@@ -28,10 +30,10 @@ public class Main extends ApplicationAdapter {
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
 
         float delta = Gdx.graphics.getDeltaTime();
-        currentScreen.render(delta);
 
-        batch.begin();
-        batch.end();
+        if (currentScreen != null) {
+            currentScreen.render(delta);
+        }
     }
 
     @Override
@@ -47,9 +49,13 @@ public class Main extends ApplicationAdapter {
 
     public void setScreen(Screen newScreen) {
         if (currentScreen != null) {
+            currentScreen.hide(); // Best practice to call hide
             currentScreen.dispose();
         }
-
         currentScreen = newScreen;
+        if (currentScreen != null) {
+            currentScreen.show(); // Best practice to call show
+            currentScreen.resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        }
     }
 }

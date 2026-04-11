@@ -100,8 +100,6 @@ public class MainMenuScreen extends BaseScreen {
                 Gdx.app.exit();
             }
         });
-
-        Gdx.input.setInputProcessor(stage);
     }
 
     private void createFonts() {
@@ -116,6 +114,11 @@ public class MainMenuScreen extends BaseScreen {
 
         menuFont = generator.generateFont(parameter);
         generator.dispose();
+    }
+
+    @Override
+    public void show() {
+        Gdx.input.setInputProcessor(stage);
     }
 
     @Override

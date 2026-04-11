@@ -100,6 +100,9 @@ public class GameScreen extends BaseScreen {
     private boolean pitySpawned = false;
     private static final float STUCK_THRESHOLD = 20f; // 20 seconds
 
+    private Texture arrowTex;
+    private Image leftArrow, rightArrow;
+
     public GameScreen(Main main, String selection) {
         this.main = main;
         this.selection = selection;
@@ -571,6 +574,39 @@ public class GameScreen extends BaseScreen {
         scoreFont = generator.generateFont(parameter);
         generator.dispose();
 
+        // Inside setupUI()
+        arrowTex = new Texture(Gdx.files.internal("arrow.png"));
+
+        leftArrow = new Image(arrowTex);
+        rightArrow = new Image(arrowTex);
+
+        leftArrow.setOrigin(Align.center);
+
+        Table arrowTable = new Table();
+        arrowTable.setFillParent(true); // Make the table the size of the whole screen
+
+        arrowTable.add(leftArrow).size(70, 100).left().padLeft(20);
+        arrowTable.add().expandX(); // This invisible spacer pushes the right arrow away
+        arrowTable.add(rightArrow).size(70, 100).right().padRight(20);
+
+        leftArrow.addAction(Actions.forever(Actions.sequence(
+            Actions.alpha(0.1f, 0.5f), // Fade to almost invisible
+            Actions.alpha(0.6f, 0.5f)  // Fade back to semi-transparent
+        )));
+
+        rightArrow.addAction(Actions.forever(Actions.sequence(
+            Actions.alpha(0.1f, 0.5f),
+            Actions.alpha(0.6f, 0.5f)
+        )));
+
+        uiStage.addActor(arrowTable);
+
+        arrowTable.addAction(Actions.sequence(
+            Actions.delay(10f),      // Wait for 10 seconds
+            Actions.fadeOut(1f),     // Fade out over 1 second (looks smoother)
+            Actions.removeActor()    // Delete it from the stage entirely
+        ));
+
         scoreLabel = new Label("Best: 0m", new Label.LabelStyle(scoreFont, Color.WHITE));
         Table scoreTable = new Table();
         scoreTable.setFillParent(true);
@@ -680,6 +716,19 @@ public class GameScreen extends BaseScreen {
         gameOverTable.setVisible(false);
         uiStage.addActor(gameOverTable);
     }
+    @Override
+    public void show() {
+        InputMultiplexer multiplexer = new InputMultiplexer();
+
+        multiplexer.addProcessor(uiStage);
+        multiplexer.addProcessor(stage);
+
+        Gdx.input.setInputProcessor(multiplexer);
+
+        if (soundPlayer != null) {
+            soundPlayer.playMusic();
+        }
+    }
 
     private Texture createWhitePixel() {
         com.badlogic.gdx.graphics.Pixmap pixmap = new com.badlogic.gdx.graphics.Pixmap(1, 1, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888);
@@ -705,6 +754,7 @@ public class GameScreen extends BaseScreen {
         if (asteroidTex != null) asteroidTex.dispose();
         if (anomalyTex != null) anomalyTex.dispose();
         if (msManger != null) msManger.dispose();
+        if (arrowTex != null) arrowTex.dispose();
         if (pauseOverlay != null) {
             pauseOverlay.dispose();
         }
