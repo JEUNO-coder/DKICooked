@@ -15,10 +15,12 @@ import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Scaling;
 import io.github.DKICooked.Main;
+import io.github.DKICooked.audio.SoundPlayer;
 import io.github.DKICooked.screen.BaseScreen;
 import io.github.DKICooked.screen.game.CharacterSelectScreen;
 import io.github.DKICooked.screen.game.LeaderboardScreen;
 import io.github.DKICooked.screen.SettingsScreen;
+
 
 public class MainMenuScreen extends BaseScreen {
     private final Main main;
@@ -26,9 +28,13 @@ public class MainMenuScreen extends BaseScreen {
     private final Texture subTitleText;
     private BitmapFont menuFont;
 
+
     public MainMenuScreen(Main main) {
         super();
         this.main = main;
+
+        main.soundPlayer.playMenuMusic();
+
 
         // 1. GENERATE FONT
         createFonts();
@@ -85,9 +91,12 @@ public class MainMenuScreen extends BaseScreen {
         startButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
+                main.soundPlayer.stopMenuMusic();
                 main.setScreen(new CharacterSelectScreen(main));
             }
         });
+
+
 
         lbButton.addListener(new ClickListener() {
             @Override

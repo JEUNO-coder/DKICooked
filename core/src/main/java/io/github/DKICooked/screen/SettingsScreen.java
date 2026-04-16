@@ -38,6 +38,8 @@ public class SettingsScreen extends BaseScreen {
         setupUI();
     }
 
+
+
     private void setupFont() {
         FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("new_font.ttf")); //
         FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
@@ -88,6 +90,7 @@ public class SettingsScreen extends BaseScreen {
             @Override
             public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
                 SoundPlayer.bgmVolume = musicSlider.getValue();
+                main.soundPlayer.updateVolume();
             }
         });
 

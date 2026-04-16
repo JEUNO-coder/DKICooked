@@ -48,7 +48,6 @@ public class GameScreen extends BaseScreen {
     private final WorldManager world;
     private final PlayerActor player;
     private final PlayerSprite sprite;
-    private final SoundPlayer soundPlayer;
 
     private Texture platformTileTexture, playerFallenTexture, backgroundTexture, railTexture;
     private Texture titleTex, retryTex, whitePixel, asteroidTex, anomalyTex;
@@ -106,8 +105,8 @@ public class GameScreen extends BaseScreen {
         this.selection = selection;
         playerFallenTexture = new Texture(Gdx.files.internal("dead.png"));
         anomalyTex = new Texture(Gdx.files.internal("emer.png"));
-        soundPlayer = new SoundPlayer();
-        soundPlayer.playMusic();
+
+        main.soundPlayer.playMusic();
 
         this.uiStage = new Stage(new FitViewport(SCREEN_WIDTH, SCREEN_HEIGHT));
 
@@ -122,7 +121,7 @@ public class GameScreen extends BaseScreen {
         platformTileTexture = new Texture(Gdx.files.internal("wallTile.jpg"));
         platformTile = new PlatformTiles(platformTileTexture);
 
-        player = new PlayerActor(soundPlayer);
+        player = new PlayerActor(main.soundPlayer);
         player.setSize(40, 60);
         player.setPosition(400, 150);
         player.setPlatforms(world.getActivePlatforms());
@@ -407,7 +406,7 @@ public class GameScreen extends BaseScreen {
                 checkAndSpawnPowerUps();
             }
         }
-        soundPlayer.updateVolume();
+        main.soundPlayer.updateVolume();
         // 3. UPDATE UI LOGIC (ALWAYS - even if paused)
         // This is what makes the PausedScreen animation actually move!
         uiStage.act(delta);
@@ -526,15 +525,15 @@ public class GameScreen extends BaseScreen {
 
             if (choice == 1) {
                 activeRaid = RaidType.ASTEROIDS;
-                soundPlayer.playMeteor();   // 🔊 meteor sound
+                main.soundPlayer.playMeteor();   // 🔊 meteor sound
             }
             else if (choice == 2) {
                 activeRaid = RaidType.UFO;
-                soundPlayer.playUFO();      // 🔊 alien sound
+                main.soundPlayer.playUFO();      // 🔊 alien sound
             }
             else {
                 activeRaid = RaidType.MAGNETIC_STORM;
-                soundPlayer.playStatic();   // 🔊 static sound
+                main.soundPlayer.playStatic();   // 🔊 static sound
             }
 
             raidEndHeight = py + 2000f;
@@ -669,21 +668,21 @@ public class GameScreen extends BaseScreen {
                 nameInput.setVisible(false);
                 submitBtn.setVisible(false);
                 retryBtn.setVisible(true);
-                soundPlayer.stopMusic();
+                main.soundPlayer.stopMusic();
                 main.setScreen(new LeaderboardScreen(main));
             }
         });
 
         retryBtn.addListener(new ClickListener() {
             @Override public void clicked(InputEvent event, float x, float y) {
-                soundPlayer.stopMusic();
+                main.soundPlayer.stopMusic();
                 main.setScreen(new GameScreen(main, selection));
             }
         });
 
         quitBtn.addListener(new ClickListener() {
             @Override public void clicked(InputEvent event, float x, float y) {
-                soundPlayer.stopMusic();
+                main.soundPlayer.stopMusic();
                 main.setScreen(new MainMenuScreen(main));
             }
         });

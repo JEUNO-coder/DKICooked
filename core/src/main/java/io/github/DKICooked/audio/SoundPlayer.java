@@ -13,6 +13,9 @@ public class SoundPlayer {
     private Sound meteorSound;
     private Sound ufoSound;
     private Sound staticSound;
+    private Music menuMusic;
+    private Sound startup_Soft;
+    private Sound startup_Fast;
 
 
     public SoundPlayer() {
@@ -21,6 +24,9 @@ public class SoundPlayer {
         ufoSound = Gdx.audio.newSound(Gdx.files.internal("sounds/alien.wav"));
         music = Gdx.audio.newMusic(Gdx.files.internal("sounds/music8bit.mp3"));
         jumpSound = Gdx.audio.newSound(Gdx.files.internal("sounds/jump.wav"));
+        menuMusic = Gdx.audio.newMusic(Gdx.files.internal("sounds/menu.wav"));
+        startup_Soft = Gdx.audio.newSound(Gdx.files.internal("sounds/startup_soft.wav"));
+        startup_Fast = Gdx.audio.newSound(Gdx.files.internal("sounds/startup_fast.wav"));
     }
 
     public void playMusic() {
@@ -30,8 +36,39 @@ public class SoundPlayer {
             music.play();
         }
     }
+
+    public void playStartupFast() {
+        if (startup_Fast != null) {
+            startup_Fast.play(sfxVolume);
+        }
+    }
+
+    private long menuMusicId = -1;
+
+    public void playMenuMusic() {
+        if (menuMusic != null) {
+            menuMusic.setVolume(bgmVolume); // Music uses bgmVolume usually
+            menuMusic.setLooping(true);      // No ID needed
+            menuMusic.play();               // No arguments needed
+        }
+    }
+
+    public void stopMenuMusic() {
+        if (menuMusic != null) {
+            menuMusic.stop(); // No ID needed
+        }
+    }
+
+    public void playStartupSoft() {
+        if (startup_Soft != null) {
+            startup_Soft.play(sfxVolume);
+        }
+    }
+
     public void playMeteor() {
-        if (meteorSound != null) meteorSound.play(sfxVolume);
+        if (meteorSound != null){
+            meteorSound.play(sfxVolume);
+        }
     }
 
     public void playUFO() {
@@ -63,5 +100,8 @@ public class SoundPlayer {
         if (meteorSound != null) meteorSound.dispose();
         if (ufoSound != null) ufoSound.dispose();
         if (staticSound != null) staticSound.dispose();
+        if (menuMusic != null) menuMusic.dispose();
+        if (startup_Soft != null) startup_Soft.dispose();
+        if (startup_Fast != null) startup_Fast.dispose();
     }
 }

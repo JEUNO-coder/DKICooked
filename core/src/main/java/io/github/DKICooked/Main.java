@@ -6,6 +6,7 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.ScreenUtils;
+import io.github.DKICooked.audio.SoundPlayer;
 import io.github.DKICooked.screen.main.IntroScreen;
 import io.github.DKICooked.screen.main.MainMenuScreen;
 
@@ -15,11 +16,13 @@ public class Main extends ApplicationAdapter {
     private SpriteBatch batch;
     private Texture image;
     private Screen currentScreen;
+    public SoundPlayer soundPlayer;
 
 
     @Override
     public void create() {
         batch = new SpriteBatch();
+        soundPlayer = new SoundPlayer();
 
         setScreen(new IntroScreen(this));
     }
@@ -44,6 +47,7 @@ public class Main extends ApplicationAdapter {
     public void dispose() {
         if (batch != null) batch.dispose();
         if (image != null) image.dispose();
+        if (soundPlayer != null) soundPlayer.dispose();
     }
 
     public void setScreen(Screen newScreen) {

@@ -1,5 +1,6 @@
 package io.github.DKICooked.screen.main;
 
+import io.github.DKICooked.audio.SoundPlayer;
 import io.github.DKICooked.screen.BaseScreen;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
@@ -17,6 +18,8 @@ public class IntroScreen extends BaseScreen {
 
     public IntroScreen(Main main) {
         this.main = main;
+
+        main.soundPlayer.playStartupSoft();
 
         FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("new_font.ttf"));
         FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();

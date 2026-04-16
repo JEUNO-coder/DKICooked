@@ -13,6 +13,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import io.github.DKICooked.Main;
+import io.github.DKICooked.audio.SoundPlayer;
 import io.github.DKICooked.screen.BaseScreen;
 
 public class SplashScreen extends BaseScreen {
@@ -20,8 +21,11 @@ public class SplashScreen extends BaseScreen {
     private final Texture titleTex;
     private final Texture subTitleTex;
 
+
     public SplashScreen(Main main) {
         this.main = main;
+
+        main.soundPlayer.playStartupFast();
 
         titleTex = new Texture(Gdx.files.internal("toyour.png"));
         subTitleTex = new Texture(Gdx.files.internal("Infinity.png"));
@@ -74,6 +78,7 @@ public class SplashScreen extends BaseScreen {
         super.dispose();
         titleTex.dispose();
         subTitleTex.dispose();
+
     }
 
 }
